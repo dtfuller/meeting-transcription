@@ -2,6 +2,34 @@
 {% block title %}Pipeline — Transcribe{% endblock %}
 {% block content %}
 <section class="pipeline-page">
-  <p class="subtitle">Pipeline tab — to be built.</p>
+  <form method="post" action="/pipeline/run" class="run-form">
+    <label>Scope:
+      <select name="scope">
+        {% for s in scopes %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+      </select>
+    </label>
+    <label><input type="radio" name="mode" value="new" checked> New only</label>
+    <label><input type="radio" name="mode" value="reclassify"> Reclassify</label>
+    <button type="submit" {% if is_running %}disabled{% endif %}>&#9654; Run</button>
+  </form>
+
+  <pre id="log" class="log">
+{% for line in history %}{{ line }}
+{% endfor %}</pre>
+
+  <script>
+    (function () {
+      const log = document.getElementById('log');
+      const es = new EventSource('/pipeline/stream');
+      es.onmessage = (e) => {
+        log.textContent += '\n' + e.data;
+        log.scrollTop = log.scrollHeight;
+        if (e.data.startsWith('EXIT ')) {
+          es.close();
+          setTimeout(() => window.location.reload(), 500);
+        }
+      };
+    })();
+  </script>
 </section>
 {% endblock %}

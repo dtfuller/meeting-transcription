@@ -55,3 +55,9 @@ pre.transcript { white-space: pre-wrap; font-family: ui-monospace, monospace; fo
 .clip-form button { background: var(--accent); color: white; border: none; border-radius: 6px; padding: 0.35rem 0.75rem; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
 .toast { position: sticky; bottom: 1rem; margin: 1rem auto 0; max-width: 540px; background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 0.75rem 1rem; display: flex; gap: 0.75rem; align-items: center; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
 .toast button { background: var(--accent); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
+.pipeline-page { display: flex; flex-direction: column; gap: 0.75rem; }
+.run-form { display: flex; gap: 0.75rem; align-items: center; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.75rem; }
+.run-form select, .run-form button { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.6rem; font-size: 0.85rem; }
+.run-form button { background: var(--accent); color: white; border: none; font-weight: 600; cursor: pointer; }
+.run-form button[disabled] { opacity: 0.5; cursor: not-allowed; }
+pre.log { background: #0a0a0a; color: #9df; padding: 0.75rem 1rem; border-radius: 8px; font-family: ui-monospace, monospace; font-size: 0.75rem; line-height: 1.5; min-height: 200px; max-height: 60vh; overflow-y: auto; white-space: pre-wrap; margin: 0; }
