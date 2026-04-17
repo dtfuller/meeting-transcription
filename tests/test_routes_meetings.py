@@ -43,3 +43,13 @@ def test_meeting_detail_renders_transcript(app_with_tree):
 def test_meeting_detail_unknown_404(app_with_tree):
     r = app_with_tree.get("/meetings/does-not/exist")
     assert r.status_code == 404
+
+
+def test_unknown_speaker_highlighted(app_with_tree):
+    r = app_with_tree.get("/meetings/multiturbo/2026-04-16 17-01-16")
+    assert 'class="unk">Unknown Speaker 1' in r.text
+
+
+def test_knowledge_view_renders_markdown(app_with_tree):
+    r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43?view=knowledge")
+    assert "<h1>" in r.text or "<h1 " in r.text

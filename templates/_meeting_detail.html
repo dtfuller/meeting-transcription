@@ -16,7 +16,7 @@
   </nav>
   <div class="subview">
     {% if view == 'transcript' %}
-      <pre class="transcript">{{ transcript_text }}</pre>
+      <pre class="transcript">{{ transcript_html|safe }}</pre>
     {% elif view == 'knowledge' %}
       <article class="md">{{ knowledge_html|safe }}</article>
     {% elif view == 'commitments' %}
