@@ -19,6 +19,16 @@
     <a class="subtab {% if view == 'commitments' %}active{% endif %}"
        href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=commitments">Commitments</a>
   </nav>
+  <div class="meeting-tags">
+    <span class="label">Tags</span>
+    {% if meeting_tags %}
+      {% for t in meeting_tags %}
+        <span class="tag tag-{{ t.type }}">{{ {"person":"👤","topic":"🏷","project":"📁"}[t.type] }} {{ t.name }}</span>
+      {% endfor %}
+    {% else %}
+      <span class="subtitle">no tags</span>
+    {% endif %}
+  </div>
   <div class="subview">
     {% if view == 'transcript' %}
       <pre class="transcript">{{ transcript_html|safe }}</pre>

@@ -83,3 +83,7 @@ pre.log { background: #0a0a0a; color: #9df; padding: 0.75rem 1rem; border-radius
 .inbox-actions button { background: var(--accent); color: white; border: none; border-radius: 6px; padding: 0.35rem 0.8rem; font-weight: 600; cursor: pointer; }
 .inbox-actions button.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
 .inbox-actions button[disabled] { opacity: 0.5; cursor: not-allowed; }
+.row-tags { display: flex; flex-wrap: wrap; gap: 0.2rem; margin: 0.1rem 0 0.3rem 0.6rem; }
+.row-tags .tag { font-size: 0.65rem; padding: 0.05rem 0.35rem; text-decoration: none; color: var(--text); }
+.meeting-tags { display: flex; align-items: center; gap: 0.4rem; margin: 0.3rem 0 0.5rem; flex-wrap: wrap; }
+.meeting-tags .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
