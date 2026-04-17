@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import clips, fs, pipeline
+from app.routes._context import nav_counts
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / "templates"))
@@ -32,10 +33,9 @@ def speakers_index(request: Request):
             "active_tab": "speakers",
             "clips": unknown_clips,
             "known_names": fs.list_known_names(),
-            "speakers_count": len(unknown_clips),
-            "pipeline_running": pipeline.get_runner().is_running(),
             "labels_since_reset": clips.labels_since_reset(),
             "unknown_meetings_count": _unknown_meetings_count(),
+            **nav_counts(),
         },
     )
 

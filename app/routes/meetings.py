@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from app import fs
 from app import markdown as md_render
 from app import pipeline
+from app.routes._context import nav_counts
 
 ROOT = Path(__file__).parent.parent.parent
 EXTRACT_PY = ROOT / "extract.py"
@@ -35,12 +36,6 @@ router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / "templates"))
 
 
-def _counts() -> dict:
-    return {
-        "speakers_count": len(fs.list_unknown_clips()),
-        "pipeline_running": pipeline.get_runner().is_running(),
-    }
-
 
 @router.get("/meetings")
 def meetings_index(request: Request):
@@ -52,7 +47,7 @@ def meetings_index(request: Request):
             "meetings": fs.list_meetings(),
             "meeting": None,
             "selected": None,
-            **_counts(),
+            **nav_counts(),
         },
     )
 
@@ -76,7 +71,7 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "transc
             "transcript_html": _render_transcript(fs.load_transcript(m)),
             "knowledge_html": md_render.render(fs.load_knowledge(m)),
             "commitments_html": md_render.render(fs.load_commitments(m)),
-            **_counts(),
+            **nav_counts(),
         },
     )
 

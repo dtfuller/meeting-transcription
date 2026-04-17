@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
 from app import fs, pipeline, clips
+from app.routes._context import nav_counts
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / "templates"))
@@ -46,8 +47,7 @@ def pipeline_index(request: Request):
             "scopes": _meetings_as_scopes(),
             "is_running": r.is_running(),
             "history": r.history(),
-            "speakers_count": len(fs.list_unknown_clips()),
-            "pipeline_running": r.is_running(),
+            **nav_counts(),
         },
     )
 

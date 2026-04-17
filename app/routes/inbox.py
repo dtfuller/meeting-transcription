@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import fs, ingest, store, watcher as watcher_mod
+from app.routes._context import nav_counts
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / "templates"))
@@ -36,10 +37,8 @@ def inbox_index(request: Request):
             "active_tab": "inbox",
             "proposals": proposals,
             "existing_subdirs": _existing_subdirs(),
-            "speakers_count": len(fs.list_unknown_clips()),
-            "pipeline_running": False,
-            "inbox_count": len(proposals),
             "watcher_enabled": bool(os.getenv("WATCH_DIR")),
+            **nav_counts(),
         },
     )
 
