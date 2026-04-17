@@ -2,7 +2,8 @@ import html as html_escape
 import re
 import sys
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, Request
+from typing import Annotated
+from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -111,3 +112,21 @@ def reclassify_one(subdir: str, stem: str):
     except pipeline.AlreadyRunning:
         raise HTTPException(409, "Pipeline already running")
     return RedirectResponse("/pipeline", status_code=303)
+
+
+@router.post("/meetings/{subdir}/{stem}/tags")
+def set_tags(
+    subdir: str,
+    stem: str,
+    tag_name: Annotated[list[str], Form()] = [],
+    tag_type: Annotated[list[str], Form()] = [],
+):
+    if fs.find_meeting(subdir, stem) is None:
+        raise HTTPException(status_code=404)
+    tags = []
+    for n, t in zip(tag_name, tag_type):
+        n = (n or "").strip()
+        if n and t in ("person", "topic", "project"):
+            tags.append(store.Tag(name=n, type=t))
+    store.set_meeting_tags(stem, tags, source="manual")
+    return RedirectResponse(f"/meetings/{subdir}/{stem}", status_code=303)

@@ -87,3 +87,8 @@ pre.log { background: #0a0a0a; color: #9df; padding: 0.75rem 1rem; border-radius
 .row-tags .tag { font-size: 0.65rem; padding: 0.05rem 0.35rem; text-decoration: none; color: var(--text); }
 .meeting-tags { display: flex; align-items: center; gap: 0.4rem; margin: 0.3rem 0 0.5rem; flex-wrap: wrap; }
 .meeting-tags .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.tag-edit { margin: 0.3rem 0; font-size: 0.85rem; }
+.tag-edit summary { cursor: pointer; color: var(--muted); }
+.tag-edit-rows { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.4rem 0; }
+.tag-edit-row { display: flex; gap: 0.4rem; }
+.tag-edit-row input, .tag-edit-row select { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.25rem 0.5rem; color: var(--text); }

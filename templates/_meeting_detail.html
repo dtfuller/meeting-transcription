@@ -29,6 +29,32 @@
       <span class="subtitle">no tags</span>
     {% endif %}
   </div>
+  <details class="tag-edit">
+    <summary>Edit tags</summary>
+    <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/tags">
+      <div class="tag-edit-rows">
+        {% for t in meeting_tags %}
+          <div class="tag-edit-row">
+            <input name="tag_name" value="{{ t.name }}">
+            <select name="tag_type">
+              {% for opt in ['person', 'topic', 'project'] %}
+                <option value="{{ opt }}" {% if t.type == opt %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endfor %}
+        <div class="tag-edit-row">
+          <input name="tag_name" placeholder="new tag">
+          <select name="tag_type">
+            <option value="topic">topic</option>
+            <option value="person">person</option>
+            <option value="project">project</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="mini-btn">Save tags</button>
+    </form>
+  </details>
   <div class="subview">
     {% if view == 'transcript' %}
       <pre class="transcript">{{ transcript_html|safe }}</pre>

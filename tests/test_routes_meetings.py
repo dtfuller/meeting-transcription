@@ -128,3 +128,17 @@ def test_meeting_tree_filters_by_tag(app_with_tree_with_tags):
     assert r.status_code == 200
     assert "2026-04-14 17-00-43" in r.text
     assert "2026-04-17 09-00-00" not in r.text
+
+
+def test_post_meeting_tags_replaces_tags(app_with_tree_with_tags):
+    from app import store
+    r = app_with_tree_with_tags.post(
+        "/meetings/multiturbo/2026-04-14 17-00-43/tags",
+        data={"tag_name": ["Maria Lopez", "onboarding"],
+              "tag_type": ["person", "topic"]},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    tags = store.list_meeting_tags("2026-04-14 17-00-43")
+    names = sorted(t.name for t in tags)
+    assert names == ["Maria Lopez", "onboarding"]
