@@ -1,0 +1,22 @@
+# Secrets
+.env
+
+# OS / editor cruft
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Claude Code per-machine settings
+.claude/settings.local.json
+
+# Pipeline inputs / outputs (private content; regenerated locally)
+data/
+transcripts/
+information/
+known-names/
+tmp/
