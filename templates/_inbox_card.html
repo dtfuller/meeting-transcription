@@ -32,6 +32,7 @@
               formaction="/inbox/{{ proposal.stem }}/dismiss"
               formmethod="post"
               formnovalidate
+              {% if proposal.status in ('transcribing', 'analyzing') %}disabled{% endif %}
               class="secondary">Dismiss</button>
     </div>
   </form>

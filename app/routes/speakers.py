@@ -62,9 +62,12 @@ def _reset_counter_on_reclassify_success(argv_: list[str], rc: int) -> None:
 @router.post("/speakers/reclassify")
 def reclassify_all():
     r = pipeline.get_runner()
-    r.set_on_complete(_reset_counter_on_reclassify_success)
     try:
-        r.start(build_reclassify_all_argv(), cwd=str(ROOT))
+        r.start(
+            build_reclassify_all_argv(),
+            cwd=str(ROOT),
+            on_complete=_reset_counter_on_reclassify_success,
+        )
     except pipeline.AlreadyRunning:
         raise HTTPException(status_code=409, detail="Pipeline already running")
     return RedirectResponse("/pipeline", status_code=303)

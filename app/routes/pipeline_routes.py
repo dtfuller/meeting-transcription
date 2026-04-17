@@ -61,10 +61,8 @@ def pipeline_run(scope: str = Form("all"), mode: str = Form("new")):
         if rc == 0 and "--reclassify" in argv_:
             clips.reset_counter()
 
-    r.set_on_complete(on_complete)
-
     try:
-        r.start(argv, cwd=str(ROOT))
+        r.start(argv, cwd=str(ROOT), on_complete=on_complete)
     except pipeline.AlreadyRunning:
         raise HTTPException(status_code=409, detail="Pipeline already running")
     return RedirectResponse("/pipeline", status_code=303)

@@ -33,12 +33,21 @@ class PipelineRunner:
     def history(self) -> list[str]:
         return list(self._history)
 
-    def start(self, argv: list[str], cwd: str | None = None) -> None:
+    def start(
+        self,
+        argv: list[str],
+        cwd: str | None = None,
+        on_complete: Callable[[list[str], int], None] | None = None,
+    ) -> None:
         with self._lock:
             if self.is_running():
                 raise AlreadyRunning()
             self._history.clear()
             self.last_return_code = None
+            # Bind the callback atomically with the subprocess so a stale
+            # caller's set_on_complete cannot overwrite an in-flight binding.
+            if on_complete is not None:
+                self._on_complete = on_complete
             self._proc = subprocess.Popen(
                 argv,
                 stdout=subprocess.PIPE,
@@ -103,9 +112,13 @@ class PipelineRunner:
         proc.wait()
         self.last_return_code = proc.returncode
         self._fanout(f"EXIT {proc.returncode}")
-        if self._on_complete is not None:
+        # Consume the callback so stale bindings don't leak to the next run.
+        with self._lock:
+            cb = self._on_complete
+            self._on_complete = None
+        if cb is not None:
             try:
-                self._on_complete(argv, proc.returncode)
+                cb(argv, proc.returncode)
             except Exception:
                 pass
 

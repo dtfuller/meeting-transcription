@@ -57,6 +57,8 @@ def inbox_apply(
     target_subdir = target_subdir.strip()
     if not target_subdir:
         raise HTTPException(status_code=400, detail="target_subdir is required")
+    if "/" in target_subdir or "\\" in target_subdir or ".." in target_subdir:
+        raise HTTPException(status_code=400, detail="invalid target_subdir")
 
     moves = [
         (fs.DATA_DIR / store.INBOX_SUBDIR / f"{stem}.mov",

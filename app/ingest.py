@@ -82,21 +82,27 @@ class IngestCoordinator:
         self._maybe_start_next()
 
     def _maybe_start_next(self) -> None:
+        runner = pipeline.get_runner()
         with self._lock:
             if self._in_flight_stem is not None:
                 return
             if not self._queue:
                 return
+            # Someone else is driving the runner (user-triggered run from the
+            # Pipeline or Speakers tab). Do NOT overwrite their on_complete.
+            # We'll be rescheduled when our own on_new_file fires next, or the
+            # user can kick us via the watcher toggle.
+            if runner.is_running():
+                return
             inbox_path, stem = self._queue.popleft()
             self._in_flight_stem = stem
 
         argv = _PIPELINE_ARGV_BUILDER(inbox_path)
-        runner = pipeline.get_runner()
-        runner.set_on_complete(self._on_pipeline_done)
         try:
-            runner.start(argv, cwd=str(ROOT))
+            runner.start(argv, cwd=str(ROOT), on_complete=self._on_pipeline_done)
         except pipeline.AlreadyRunning:
-            # Put back in queue, reset in-flight, and try again next time
+            # Race window: someone started a run between our is_running() check
+            # and start(). Put back in queue and reset in-flight.
             with self._lock:
                 self._queue.appendleft((inbox_path, stem))
                 self._in_flight_stem = None
