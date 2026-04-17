@@ -22,11 +22,12 @@ def create_app() -> FastAPI:
 
     store.init_schema()
 
-    from app.routes import meetings, speakers, pipeline_routes, media
+    from app.routes import meetings, speakers, pipeline_routes, media, inbox
     app.include_router(meetings.router)
     app.include_router(speakers.router)
     app.include_router(pipeline_routes.router)
     app.include_router(media.router)
+    app.include_router(inbox.router)
 
     @app.on_event("startup")
     def _start_watcher():

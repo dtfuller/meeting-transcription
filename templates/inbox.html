@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Inbox — Transcribe{% endblock %}
+{% block content %}
+<section class="inbox-page">
+  {% for p in proposals %}
+    <article class="inbox-card">
+      <h3>{{ p.stem }}</h3>
+      <p>{{ p.status }}</p>
+      <p>subdir: {{ p.proposed_subdir }}</p>
+      <ul>
+      {% for t in p.proposed_tags %}<li>{{ t.name }} ({{ t.type }})</li>{% endfor %}
+      </ul>
+    </article>
+  {% endfor %}
+</section>
+{% endblock %}
