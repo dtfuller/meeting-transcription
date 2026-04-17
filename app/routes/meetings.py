@@ -1,11 +1,28 @@
 import html as html_escape
 import re
+import sys
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import fs
 from app import markdown as md_render
+from app import pipeline
+
+ROOT = Path(__file__).parent.parent.parent
+EXTRACT_PY = ROOT / "extract.py"
+PROCESS_PY = ROOT / "process.py"
+
+
+def build_reextract_argv(m: fs.Meeting) -> list[str]:
+    data_root = fs.DATA_DIR.parent
+    return [sys.executable, str(EXTRACT_PY), str(m.transcript_path.relative_to(data_root)), "--force"]
+
+
+def build_reclassify_argv(m: fs.Meeting) -> list[str]:
+    data_root = fs.DATA_DIR.parent
+    return [sys.executable, str(PROCESS_PY), str(m.mov_path.relative_to(data_root)), "--reclassify"]
 
 _UNK_RE = re.compile(r"(Unknown Speaker \d+)")
 
@@ -62,3 +79,27 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "transc
             **_counts(),
         },
     )
+
+
+@router.post("/meetings/{subdir}/{stem}/reextract")
+def reextract(subdir: str, stem: str):
+    m = fs.find_meeting(subdir, stem)
+    if m is None:
+        raise HTTPException(404)
+    try:
+        pipeline.get_runner().start(build_reextract_argv(m), cwd=str(ROOT))
+    except pipeline.AlreadyRunning:
+        raise HTTPException(409, "Pipeline already running")
+    return RedirectResponse("/pipeline", status_code=303)
+
+
+@router.post("/meetings/{subdir}/{stem}/reclassify")
+def reclassify_one(subdir: str, stem: str):
+    m = fs.find_meeting(subdir, stem)
+    if m is None:
+        raise HTTPException(404)
+    try:
+        pipeline.get_runner().start(build_reclassify_argv(m), cwd=str(ROOT))
+    except pipeline.AlreadyRunning:
+        raise HTTPException(409, "Pipeline already running")
+    return RedirectResponse("/pipeline", status_code=303)

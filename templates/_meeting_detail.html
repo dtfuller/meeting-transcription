@@ -3,7 +3,12 @@
     <h2>{{ meeting.stem }}</h2>
     <div class="actions">
       <a class="mini-btn" href="/video/meeting/{{ meeting.subdir }}/{{ meeting.stem }}" target="_blank">▶ Open video</a>
-      <!-- re-extract / reclassify hooked up in later task -->
+      <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/reextract" style="display:inline;">
+        <button class="mini-btn" type="submit" {% if not meeting.has_transcript %}disabled{% endif %}>↻ Re-extract</button>
+      </form>
+      <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/reclassify" style="display:inline;">
+        <button class="mini-btn" type="submit">🔄 Reclassify</button>
+      </form>
     </div>
   </header>
   <nav class="subtabs">

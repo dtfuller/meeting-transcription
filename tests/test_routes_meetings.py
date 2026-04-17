@@ -53,3 +53,46 @@ def test_unknown_speaker_highlighted(app_with_tree):
 def test_knowledge_view_renders_markdown(app_with_tree):
     r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43?view=knowledge")
     assert "<h1>" in r.text or "<h1 " in r.text
+
+
+import sys
+import time
+from pathlib import Path
+
+HELPER = Path(__file__).parent / "helpers" / "fake_pipeline.py"
+
+
+def test_post_reextract_starts_runner(app_with_tree, monkeypatch):
+    from app import pipeline
+    pipeline.get_runner().reset_for_tests()
+    monkeypatch.setattr(
+        "app.routes.meetings.build_reextract_argv",
+        lambda m: [sys.executable, str(HELPER)],
+    )
+    r = app_with_tree.post(
+        "/meetings/multiturbo/2026-04-14 17-00-43/reextract",
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert r.headers["location"] == "/pipeline"
+    for _ in range(200):
+        if not pipeline.get_runner().is_running(): break
+        time.sleep(0.05)
+
+
+def test_post_reclassify_one_starts_runner(app_with_tree, monkeypatch):
+    from app import pipeline
+    pipeline.get_runner().reset_for_tests()
+    monkeypatch.setattr(
+        "app.routes.meetings.build_reclassify_argv",
+        lambda m: [sys.executable, str(HELPER)],
+    )
+    r = app_with_tree.post(
+        "/meetings/multiturbo/2026-04-16 17-01-16/reclassify",
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert r.headers["location"] == "/pipeline"
+    for _ in range(200):
+        if not pipeline.get_runner().is_running(): break
+        time.sleep(0.05)
