@@ -2,6 +2,20 @@
 {% block title %}Speakers — Transcribe{% endblock %}
 {% block content %}
 <section class="speakers-page">
-  <p class="subtitle">Speakers tab — to be built.</p>
+  <div class="speakers-queue">
+    {% if clips %}
+      {% for clip in clips %}
+        {% include "_clip_card.html" %}
+      {% endfor %}
+    {% else %}
+      <p class="subtitle">No clips awaiting labels. You're all caught up.</p>
+    {% endif %}
+  </div>
+
+  <datalist id="known-names">
+    {% for n in known_names %}<option value="{{ n }}">{% endfor %}
+  </datalist>
+
+  {% include "_toast.html" %}
 </section>
 {% endblock %}

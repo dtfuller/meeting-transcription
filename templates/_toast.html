@@ -1,0 +1,8 @@
+{% if labels_since_reset %}
+<div class="toast" id="reclassify-toast">
+  <span>You've labeled {{ labels_since_reset }} speaker(s).</span>
+  <form hx-post="/speakers/reclassify" hx-target="body" hx-swap="outerHTML">
+    <button type="submit">Reclassify {{ unknown_meetings_count }} meeting(s) now →</button>
+  </form>
+</div>
+{% endif %}
