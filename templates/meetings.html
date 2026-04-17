@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Meetings — Transcribe{% endblock %}
+{% block content %}
+<section class="meetings-page">
+  {% include "_meeting_tree.html" %}
+  {% if meeting %}
+    {% include "_meeting_detail.html" %}
+  {% else %}
+    <section class="detail empty"><p class="subtitle">Select a meeting from the left.</p></section>
+  {% endif %}
+</section>
+{% endblock %}

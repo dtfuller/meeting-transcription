@@ -1,0 +1,31 @@
+<section class="detail">
+  <header class="detail-head">
+    <h2>{{ meeting.stem }}</h2>
+    <div class="actions">
+      <a class="mini-btn" href="/video/meeting/{{ meeting.subdir }}/{{ meeting.stem }}" target="_blank">▶ Open video</a>
+      <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/reextract" style="display:inline;">
+        <button class="mini-btn" type="submit" {% if not meeting.has_transcript %}disabled{% endif %}>↻ Re-extract</button>
+      </form>
+      <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/reclassify" style="display:inline;">
+        <button class="mini-btn" type="submit">🔄 Reclassify</button>
+      </form>
+    </div>
+  </header>
+  <nav class="subtabs">
+    <a class="subtab {% if view == 'transcript' %}active{% endif %}"
+       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=transcript">Transcript</a>
+    <a class="subtab {% if view == 'knowledge' %}active{% endif %}"
+       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=knowledge">Knowledge</a>
+    <a class="subtab {% if view == 'commitments' %}active{% endif %}"
+       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=commitments">Commitments</a>
+  </nav>
+  <div class="subview">
+    {% if view == 'transcript' %}
+      <pre class="transcript">{{ transcript_html|safe }}</pre>
+    {% elif view == 'knowledge' %}
+      <article class="md">{{ knowledge_html|safe }}</article>
+    {% elif view == 'commitments' %}
+      <article class="md">{{ commitments_html|safe }}</article>
+    {% endif %}
+  </div>
+</section>
