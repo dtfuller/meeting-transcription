@@ -1,13 +1,21 @@
+import sys
 from pathlib import Path
 
-from fastapi import APIRouter, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app import clips, fs
+from app import clips, fs, pipeline
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / "templates"))
+
+ROOT = Path(__file__).parent.parent.parent
+PROCESS_PY = ROOT / "process.py"
+
+
+def build_reclassify_all_argv() -> list[str]:
+    return [sys.executable, str(PROCESS_PY), "--reclassify"]
 
 
 def _unknown_meetings_count() -> int:
@@ -44,3 +52,12 @@ def label(request: Request, filename: str = Form(...), name: str = Form(...)):
         unknown_meetings_count=_unknown_meetings_count(),
     )
     return HTMLResponse(html)
+
+
+@router.post("/speakers/reclassify")
+def reclassify_all():
+    try:
+        pipeline.get_runner().start(build_reclassify_all_argv(), cwd=str(ROOT))
+    except pipeline.AlreadyRunning:
+        raise HTTPException(status_code=409, detail="Pipeline already running")
+    return RedirectResponse("/pipeline", status_code=303)

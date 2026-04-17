@@ -57,3 +57,25 @@ def test_post_label_moves_clip_and_increments_counter(client, tmp_path, monkeypa
     assert (tmp_path / "known-names" / "to-use" /
             "Alejandra Gomez - 2026-04-16 17-01-16 - 01m08s.mov").exists()
     assert clips.labels_since_reset() == 1
+
+
+import sys
+import time
+from pathlib import Path
+
+HELPER = Path(__file__).parent / "helpers" / "fake_pipeline.py"
+
+
+def test_post_reclassify_all_starts_runner(client, monkeypatch):
+    from app import pipeline
+    pipeline.get_runner().reset_for_tests()
+    monkeypatch.setattr(
+        "app.routes.speakers.build_reclassify_all_argv",
+        lambda: [sys.executable, str(HELPER)],
+    )
+    r = client.post("/speakers/reclassify", follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/pipeline"
+    for _ in range(200):
+        if not pipeline.get_runner().is_running(): break
+        time.sleep(0.05)
