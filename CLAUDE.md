@@ -68,3 +68,16 @@ Streams each transcript to Claude (`claude-opus-4-6`) with adaptive thinking. Th
 - `known-names/to-classify/` — auto-generated clips of unidentified speakers awaiting human labeling.
 - `information/<subdir>/<name>-knowledge.md` and `-commitments.md` — extraction outputs.
 - `tmp/` — scratch WAVs; safe to delete when no run is active.
+
+## Web UI (Round 1)
+
+Local-only FastAPI + HTMX app.
+
+```bash
+python server.py  # starts on http://127.0.0.1:8000
+pytest            # runs the UI test suite
+```
+
+Three tabs: **Meetings** (browse transcripts + knowledge + commitments, re-extract / reclassify per meeting), **Speakers** (queue of pending clips from `known-names/to-classify/` — label + batch-reclassify), **Pipeline** (scope + mode form, live log streaming via SSE, one run at a time).
+
+The server is additive — the existing `transcribe.py`, `extract.py`, `process.py` CLIs keep working unchanged.
