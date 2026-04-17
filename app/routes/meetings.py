@@ -38,7 +38,7 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / 
 def _counts() -> dict:
     return {
         "speakers_count": len(fs.list_unknown_clips()),
-        "pipeline_running": False,  # wired up in pipeline task
+        "pipeline_running": pipeline.get_runner().is_running(),
     }
 
 

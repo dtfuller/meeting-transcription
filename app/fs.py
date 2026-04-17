@@ -11,7 +11,6 @@ INFORMATION_DIR = ROOT / "information"
 KNOWN_NAMES_TO_USE = ROOT / "known-names" / "to-use"
 KNOWN_NAMES_TO_CLASSIFY = ROOT / "known-names" / "to-classify"
 
-_UNKNOWN_MARKER = "Unknown Speaker"
 _CLIP_TS_RE = re.compile(r"(\d+m\d+s)\.mov$")
 
 

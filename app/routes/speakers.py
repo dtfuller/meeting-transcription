@@ -33,7 +33,7 @@ def speakers_index(request: Request):
             "clips": unknown_clips,
             "known_names": fs.list_known_names(),
             "speakers_count": len(unknown_clips),
-            "pipeline_running": False,
+            "pipeline_running": pipeline.get_runner().is_running(),
             "labels_since_reset": clips.labels_since_reset(),
             "unknown_meetings_count": _unknown_meetings_count(),
         },
@@ -54,10 +54,17 @@ def label(request: Request, filename: str = Form(...), name: str = Form(...)):
     return HTMLResponse(html)
 
 
+def _reset_counter_on_reclassify_success(argv_: list[str], rc: int) -> None:
+    if rc == 0 and "--reclassify" in argv_:
+        clips.reset_counter()
+
+
 @router.post("/speakers/reclassify")
 def reclassify_all():
+    r = pipeline.get_runner()
+    r.set_on_complete(_reset_counter_on_reclassify_success)
     try:
-        pipeline.get_runner().start(build_reclassify_all_argv(), cwd=str(ROOT))
+        r.start(build_reclassify_all_argv(), cwd=str(ROOT))
     except pipeline.AlreadyRunning:
         raise HTTPException(status_code=409, detail="Pipeline already running")
     return RedirectResponse("/pipeline", status_code=303)

@@ -79,3 +79,33 @@ def test_post_reclassify_all_starts_runner(client, monkeypatch):
     for _ in range(200):
         if not pipeline.get_runner().is_running(): break
         time.sleep(0.05)
+
+
+def test_reclassify_resets_labels_counter_on_success(client, monkeypatch):
+    from app import pipeline
+    pipeline.get_runner().reset_for_tests()
+    clips.reset_counter()
+    # Pretend the user labeled a couple of clips
+    clips.label_clip(
+        "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov",
+        "Alejandra Gomez",
+    )
+    clips.label_clip(
+        "Unknown Speaker 2 - 2026-04-16 17-01-16 - 03m22s.mov",
+        "Maria Lopez",
+    )
+    assert clips.labels_since_reset() == 2
+
+    # Fake pipeline run whose argv includes --reclassify
+    monkeypatch.setattr(
+        "app.routes.speakers.build_reclassify_all_argv",
+        lambda: [sys.executable, str(HELPER), "--reclassify"],
+    )
+    r = client.post("/speakers/reclassify", follow_redirects=False)
+    assert r.status_code == 303
+
+    for _ in range(200):
+        if not pipeline.get_runner().is_running(): break
+        time.sleep(0.05)
+    assert pipeline.get_runner().last_return_code == 0
+    assert clips.labels_since_reset() == 0

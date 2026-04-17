@@ -56,7 +56,7 @@ class PipelineRunner:
     def subscribe(self) -> AsyncIterator[str]:
         """Async generator yielding history (first) then live lines, then final 'EXIT N'."""
         if self._loop is None:
-            self._loop = asyncio.get_event_loop()
+            self._loop = asyncio.get_running_loop()
         q: asyncio.Queue[str] = asyncio.Queue()
         for line in self._history:
             q.put_nowait(line)
