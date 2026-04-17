@@ -34,3 +34,26 @@ def test_speakers_includes_known_names_datalist(client):
 def test_speakers_count_in_nav(client):
     r = client.get("/speakers")
     assert '<span class="count">2</span>' in r.text
+
+
+from app import clips
+
+
+def test_post_label_moves_clip_and_increments_counter(client, tmp_path, monkeypatch):
+    clips.reset_counter()
+    r = client.post(
+        "/speakers/label",
+        data={
+            "filename": "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov",
+            "name": "Alejandra Gomez",
+        },
+    )
+    assert r.status_code == 200
+    # Response is the updated queue fragment
+    assert "Unknown Speaker 1" not in r.text  # it was the first clip; now gone
+    assert "Unknown Speaker 2" in r.text
+    assert "Reclassify" in r.text  # toast visible
+    # Physically moved
+    assert (tmp_path / "known-names" / "to-use" /
+            "Alejandra Gomez - 2026-04-16 17-01-16 - 01m08s.mov").exists()
+    assert clips.labels_since_reset() == 1
