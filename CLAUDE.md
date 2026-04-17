@@ -81,3 +81,28 @@ pytest            # runs the UI test suite
 Three tabs: **Meetings** (browse transcripts + knowledge + commitments, re-extract / reclassify per meeting), **Speakers** (queue of pending clips from `known-names/to-classify/` — label + batch-reclassify), **Pipeline** (scope + mode form, live log streaming via SSE, one run at a time).
 
 The server is additive — the existing `transcribe.py`, `extract.py`, `process.py` CLIs keep working unchanged.
+
+## Web UI (Round 2)
+
+Round 2 adds:
+
+- **Inbox tab** — new recordings arriving in `$WATCH_DIR` are auto-copied into `data/_inbox/`, run through `process.py`, then analyzed by Claude to propose a target subdir + tags. You approve in the Inbox tab; files move to `data/<subdir>/` and tags persist.
+- **Tags** — stored in SQLite at `ui.db` (gitignored). Displayed as chips on meeting rows and the detail view. Click a tag chip to filter the Meetings tree. Edit tags manually via the "Edit tags" disclosure on any meeting detail.
+- **Watcher** — `watchdog.PollingObserver` monitors `$WATCH_DIR` when set. Toggle with `POST /watcher/start|stop|status`. No-op if `WATCH_DIR` is unset.
+
+Configuration (in `.env`):
+
+```
+WATCH_DIR=/Users/you/Movies/Meetings
+```
+
+Module layout added in Round 2:
+
+- `app/store.py` — SQLite wrapper (tags + inbox proposals).
+- `app/watcher.py` — polling file-system observer with stability heuristic.
+- `app/ingest.py` — coordinator that copies new files to `data/_inbox/`, enqueues the pipeline run, and triggers auto-categorize.
+- `app/categorize.py` — Claude-powered subdir + tag proposer.
+- `app/routes/inbox.py` — Inbox tab, apply/dismiss, watcher toggle.
+- `app/routes/_context.py` — shared `nav_counts()` helper used by every tab.
+
+The Round 1 CLI scripts (`transcribe.py`, `extract.py`, `process.py`) remain unchanged.
