@@ -44,6 +44,10 @@ class Meeting:
         labels = set(re.findall(r"Unknown Speaker \d+", text))
         return len(labels)
 
+    @property
+    def is_inbox(self) -> bool:
+        return self.subdir == "_inbox"
+
 
 @dataclass(frozen=True)
 class Clip:
@@ -69,13 +73,13 @@ def _meeting_from_mov(mov: Path) -> Meeting:
     )
 
 
-def list_meetings() -> list[Meeting]:
+def list_meetings(include_inbox: bool = False) -> list[Meeting]:
     if not DATA_DIR.exists():
         return []
-    return sorted(
-        (_meeting_from_mov(p) for p in DATA_DIR.rglob("*.mov")),
-        key=lambda m: (m.subdir, m.stem),
-    )
+    meetings = (_meeting_from_mov(p) for p in DATA_DIR.rglob("*.mov"))
+    if not include_inbox:
+        meetings = (m for m in meetings if m.subdir != "_inbox")
+    return sorted(meetings, key=lambda m: (m.subdir, m.stem))
 
 
 def find_meeting(subdir: str, stem: str) -> Meeting | None:

@@ -71,3 +71,30 @@ def test_list_known_names_groups_by_prefix(tree):
     assert "Darwin Henao" in names
     # Deduped
     assert names.count("David Fuller") == 1
+
+
+def test_list_meetings_excludes_inbox_by_default(tree):
+    (tree / "data" / "_inbox").mkdir()
+    (tree / "data" / "_inbox" / "2026-04-17 22-00-00.mov").write_bytes(b"\x00")
+    meetings = fs.list_meetings()
+    keys = [(m.subdir, m.stem) for m in meetings]
+    assert ("_inbox", "2026-04-17 22-00-00") not in keys
+
+
+def test_list_meetings_includes_inbox_when_asked(tree):
+    (tree / "data" / "_inbox").mkdir()
+    (tree / "data" / "_inbox" / "2026-04-17 22-00-00.mov").write_bytes(b"\x00")
+    meetings = fs.list_meetings(include_inbox=True)
+    keys = [(m.subdir, m.stem) for m in meetings]
+    assert ("_inbox", "2026-04-17 22-00-00") in keys
+
+
+def test_meeting_is_inbox_property(tree):
+    (tree / "data" / "_inbox").mkdir()
+    (tree / "data" / "_inbox" / "stem-x.mov").write_bytes(b"\x00")
+    m = fs.find_meeting("_inbox", "stem-x")
+    assert m is not None
+    assert m.is_inbox
+
+    m2 = fs.find_meeting("multiturbo", "2026-04-14 17-00-43")
+    assert not m2.is_inbox
