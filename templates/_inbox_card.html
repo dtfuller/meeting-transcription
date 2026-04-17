@@ -28,9 +28,10 @@
     <div class="inbox-actions">
       <button type="submit"
               {% if proposal.status != 'ready' %}disabled{% endif %}>Apply</button>
-      <button type="button"
+      <button type="submit"
               formaction="/inbox/{{ proposal.stem }}/dismiss"
               formmethod="post"
+              formnovalidate
               class="secondary">Dismiss</button>
     </div>
   </form>
