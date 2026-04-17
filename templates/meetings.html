@@ -2,6 +2,11 @@
 {% block title %}Meetings — Transcribe{% endblock %}
 {% block content %}
 <section class="meetings-page">
-  <p class="subtitle">Meetings tab — to be built.</p>
+  {% include "_meeting_tree.html" %}
+  {% if meeting %}
+    {% include "_meeting_detail.html" %}
+  {% else %}
+    <section class="detail empty"><p class="subtitle">Select a meeting from the left.</p></section>
+  {% endif %}
 </section>
 {% endblock %}

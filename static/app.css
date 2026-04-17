@@ -25,3 +25,19 @@ body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background:
 .tab .running { background: var(--ok); color: white; border-radius: 10px; padding: 0 0.4rem; margin-left: 0.25rem; font-size: 0.7rem; }
 .app-main { padding: 1.25rem 1.5rem; }
 .subtitle { color: var(--muted); }
+.meetings-page { display: flex; gap: 1rem; align-items: flex-start; }
+.tree { min-width: 220px; max-width: 280px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+.tree .folder { font-weight: 600; margin: 0.4rem 0 0.2rem; }
+.tree ul { list-style: none; padding-left: 0.5rem; margin: 0; }
+.tree li a { text-decoration: none; color: var(--text); display: inline-flex; align-items: center; padding: 0.15rem 0; gap: 0.3rem; }
+.tree li a.hl { color: var(--accent); font-weight: 600; }
+.tree .badge { background: var(--warn); color: white; border-radius: 10px; padding: 0 0.35rem; font-size: 0.65rem; }
+.detail { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; }
+.detail.empty { color: var(--muted); }
+.detail-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+.detail-head h2 { margin: 0; font-size: 1rem; flex: 1; }
+.mini-btn { background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 0.25rem 0.55rem; border-radius: 6px; font-size: 0.8rem; text-decoration: none; cursor: pointer; }
+.subtabs { display: flex; gap: 0.6rem; border-bottom: 1px solid var(--border); margin-bottom: 0.5rem; }
+.subtab { text-decoration: none; color: var(--muted); padding: 0.3rem 0.1rem; font-size: 0.85rem; }
+.subtab.active { color: var(--accent); font-weight: 600; border-bottom: 2px solid var(--accent); }
+pre.transcript { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 0.8rem; line-height: 1.55; color: var(--muted); margin: 0; }

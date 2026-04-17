@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Transcribe{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/htmx.min.js"></script>
@@ -10,12 +11,15 @@
   <header class="app-bar">
     <h1>Transcribe</h1>
     <nav class="tabs">
-      <a href="/meetings" class="tab {% if active_tab == 'meetings' %}active{% endif %}">Meetings</a>
-      <a href="/speakers" class="tab {% if active_tab == 'speakers' %}active{% endif %}">
+      <a href="/meetings" class="tab {% if active_tab == 'meetings' %}active{% endif %}"
+         {% if active_tab == 'meetings' %}aria-current="page"{% endif %}>Meetings</a>
+      <a href="/speakers" class="tab {% if active_tab == 'speakers' %}active{% endif %}"
+         {% if active_tab == 'speakers' %}aria-current="page"{% endif %}>
         Speakers
         {% if speakers_count %}<span class="count">{{ speakers_count }}</span>{% endif %}
       </a>
-      <a href="/pipeline" class="tab {% if active_tab == 'pipeline' %}active{% endif %}">
+      <a href="/pipeline" class="tab {% if active_tab == 'pipeline' %}active{% endif %}"
+         {% if active_tab == 'pipeline' %}aria-current="page"{% endif %}>
         Pipeline
         {% if pipeline_running %}<span class="running">running</span>{% endif %}
       </a>

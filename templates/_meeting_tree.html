@@ -1,0 +1,19 @@
+<aside class="tree">
+  {% set current_subdir = namespace(v=None) %}
+  {% for m in meetings %}
+    {% if m.subdir != current_subdir.v %}
+      {% if not loop.first %}</ul>{% endif %}
+      <div class="folder">📁 {{ m.subdir }}</div>
+      <ul>
+      {% set current_subdir.v = m.subdir %}
+    {% endif %}
+    <li>
+      <a href="/meetings/{{ m.subdir }}/{{ m.stem }}"
+         class="{% if selected and selected.subdir == m.subdir and selected.stem == m.stem %}hl{% endif %}">
+        {{ m.stem }}
+        {% if m.unknown_count %}<span class="badge">{{ m.unknown_count }}</span>{% endif %}
+      </a>
+    </li>
+  {% endfor %}
+  {% if meetings %}</ul>{% endif %}
+</aside>
