@@ -11,10 +11,11 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Meeting Transcribe UI")
     app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 
-    from app.routes import meetings, speakers, pipeline_routes
+    from app.routes import meetings, speakers, pipeline_routes, media
     app.include_router(meetings.router)
     app.include_router(speakers.router)
     app.include_router(pipeline_routes.router)
+    app.include_router(media.router)
 
     @app.get("/healthz")
     def healthz():
