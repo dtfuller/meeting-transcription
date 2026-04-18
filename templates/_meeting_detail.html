@@ -12,12 +12,12 @@
     </div>
   </header>
   <nav class="subtabs">
-    <a class="subtab {% if view == 'transcript' %}active{% endif %}"
-       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=transcript">Transcript</a>
     <a class="subtab {% if view == 'knowledge' %}active{% endif %}"
        href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=knowledge">Knowledge</a>
     <a class="subtab {% if view == 'commitments' %}active{% endif %}"
        href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=commitments">Commitments</a>
+    <a class="subtab {% if view == 'transcript' %}active{% endif %}"
+       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=transcript">Transcript</a>
   </nav>
   <div class="meeting-tags">
     <span class="label">Tags</span>

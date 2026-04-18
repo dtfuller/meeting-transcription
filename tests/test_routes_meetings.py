@@ -53,7 +53,7 @@ def test_unknown_badge_shown_for_meetings_with_unknown_speakers(app_with_tree):
 
 
 def test_meeting_detail_renders_transcript(app_with_tree):
-    r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43")
+    r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43?view=transcript")
     assert r.status_code == 200
     assert "David Fuller" in r.text
     assert "hola" in r.text
@@ -65,7 +65,7 @@ def test_meeting_detail_unknown_404(app_with_tree):
 
 
 def test_unknown_speaker_highlighted(app_with_tree):
-    r = app_with_tree.get("/meetings/multiturbo/2026-04-16 17-01-16")
+    r = app_with_tree.get("/meetings/multiturbo/2026-04-16 17-01-16?view=transcript")
     assert 'class="unk">Unknown Speaker 1' in r.text
 
 

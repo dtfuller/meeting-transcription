@@ -17,6 +17,13 @@
 {% for line in history %}{{ line }}
 {% endfor %}</pre>
 
+  <script>
+    (function () {
+      const log = document.getElementById('log');
+      if (log) log.scrollTop = log.scrollHeight;
+    })();
+  </script>
+
   {% if is_running %}
   <script>
     (function () {

@@ -18,6 +18,8 @@
 body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
 .app-bar { display: flex; align-items: center; gap: 1.5rem; padding: 0.6rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--border); }
 .app-bar h1 { font-size: 1rem; font-weight: 600; margin: 0; }
+.app-title { color: inherit; text-decoration: none; }
+.app-title:hover { color: var(--accent); }
 .tabs { display: flex; gap: 0.75rem; }
 .tab { text-decoration: none; color: var(--muted); padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.9rem; }
 .tab.active { background: var(--bg); color: var(--accent); font-weight: 600; }

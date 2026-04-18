@@ -62,12 +62,12 @@ def meetings_index(request: Request, tag: str | None = None, tag_type: str | Non
 
 
 @router.get("/meetings/{subdir}/{stem}")
-def meeting_detail(subdir: str, stem: str, request: Request, view: str = "transcript"):
+def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowledge"):
     m = fs.find_meeting(subdir, stem)
     if m is None:
         raise HTTPException(status_code=404)
     if view not in ("transcript", "knowledge", "commitments"):
-        view = "transcript"
+        view = "knowledge"
     meetings = fs.list_meetings()
     tags_by_stem = {mm.stem: store.list_meeting_tags(mm.stem) for mm in meetings}
     return templates.TemplateResponse(
