@@ -70,6 +70,13 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowle
         view = "knowledge"
     meetings = fs.list_meetings()
     tags_by_stem = {mm.stem: store.list_meeting_tags(mm.stem) for mm in meetings}
+    idx = next(
+        (i for i, mm in enumerate(meetings)
+         if mm.subdir == m.subdir and mm.stem == m.stem),
+        None,
+    )
+    prev_meeting = meetings[idx - 1] if idx is not None and idx > 0 else None
+    next_meeting = meetings[idx + 1] if idx is not None and idx < len(meetings) - 1 else None
     return templates.TemplateResponse(
         request,
         "meetings.html",
@@ -79,6 +86,8 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowle
             "meeting": m,
             "selected": m,
             "view": view,
+            "prev_meeting": prev_meeting,
+            "next_meeting": next_meeting,
             "transcript_html": _render_transcript(fs.load_transcript(m)),
             "knowledge_html": md_render.render(fs.load_knowledge(m)),
             "commitments_html": md_render.render(fs.load_commitments(m)),

@@ -2,6 +2,16 @@
   <header class="detail-head">
     <h2>{{ meeting.stem }}</h2>
     <div class="actions">
+      {% if prev_meeting %}
+        <a class="mini-btn" href="/meetings/{{ prev_meeting.subdir }}/{{ prev_meeting.stem }}?view={{ view }}">← Prev</a>
+      {% else %}
+        <span class="mini-btn disabled">← Prev</span>
+      {% endif %}
+      {% if next_meeting %}
+        <a class="mini-btn" href="/meetings/{{ next_meeting.subdir }}/{{ next_meeting.stem }}?view={{ view }}">Next →</a>
+      {% else %}
+        <span class="mini-btn disabled">Next →</span>
+      {% endif %}
       <a class="mini-btn" href="/video/meeting/{{ meeting.subdir }}/{{ meeting.stem }}" target="_blank">▶ Open video</a>
       <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/reextract" style="display:inline;">
         <button class="mini-btn" type="submit" {% if not meeting.has_transcript %}disabled{% endif %}>↻ Re-extract</button>

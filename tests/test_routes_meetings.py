@@ -142,3 +142,24 @@ def test_post_meeting_tags_replaces_tags(app_with_tree_with_tags):
     tags = store.list_meeting_tags("2026-04-14 17-00-43")
     names = sorted(t.name for t in tags)
     assert names == ["Maria Lopez", "onboarding"]
+
+
+def test_meeting_detail_has_prev_and_next(app_with_tree):
+    # Sorted order: check-in/2026-04-17 → multiturbo/2026-04-14 → multiturbo/2026-04-16
+    # The middle one has both neighbors.
+    r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43")
+    assert r.status_code == 200
+    assert "/meetings/check-in/2026-04-17 09-00-00" in r.text
+    assert "/meetings/multiturbo/2026-04-16 17-01-16" in r.text
+
+
+def test_first_meeting_has_no_prev_link(app_with_tree):
+    r = app_with_tree.get("/meetings/check-in/2026-04-17 09-00-00")
+    assert r.status_code == 200
+    assert '<span class="mini-btn disabled">← Prev' in r.text
+
+
+def test_last_meeting_has_no_next_link(app_with_tree):
+    r = app_with_tree.get("/meetings/multiturbo/2026-04-16 17-01-16")
+    assert r.status_code == 200
+    assert '<span class="mini-btn disabled">Next →' in r.text
