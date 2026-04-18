@@ -23,3 +23,7 @@ transcripts/
 information/
 known-names/
 tmp/
+
+# Web UI SQLite DB
+ui.db
+ui.db-journal

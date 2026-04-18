@@ -9,10 +9,15 @@
 </head>
 <body>
   <header class="app-bar">
-    <h1>Transcribe</h1>
-    <nav class="tabs">
+    <h1><a href="/" class="app-title">Transcribe</a></h1>
+    <nav class="tabs" aria-label="Main tabs">
       <a href="/meetings" class="tab {% if active_tab == 'meetings' %}active{% endif %}"
          {% if active_tab == 'meetings' %}aria-current="page"{% endif %}>Meetings</a>
+      <a href="/inbox" class="tab {% if active_tab == 'inbox' %}active{% endif %}"
+         {% if active_tab == 'inbox' %}aria-current="page"{% endif %}>
+        Inbox
+        {% if inbox_count %}<span class="count">{{ inbox_count }}</span>{% endif %}
+      </a>
       <a href="/speakers" class="tab {% if active_tab == 'speakers' %}active{% endif %}"
          {% if active_tab == 'speakers' %}aria-current="page"{% endif %}>
         Speakers

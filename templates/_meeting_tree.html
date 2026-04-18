@@ -13,6 +13,16 @@
         {{ m.stem }}
         {% if m.unknown_count %}<span class="badge">{{ m.unknown_count }}</span>{% endif %}
       </a>
+      {% set tags = tags_by_stem.get(m.stem, []) %}
+      {% if tags %}
+        <div class="row-tags">
+          {% for t in tags %}
+            <a class="tag tag-{{ t.type }}"
+               href="/meetings?tag={{ t.name|urlencode }}&amp;tag_type={{ t.type }}"
+               >{{ {"person":"👤","topic":"🏷","project":"📁"}[t.type] }} {{ t.name }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
     </li>
   {% endfor %}
   {% if meetings %}</ul>{% endif %}

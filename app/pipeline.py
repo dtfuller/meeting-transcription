@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import subprocess
 import threading
+import time
 from collections import deque
 from typing import AsyncIterator, Callable
+
+# transcribe.py's _spinner re-renders one terminal line every ~100 ms via \r.
+# Python's text-mode subprocess translates \r to \n (universal newlines), so
+# each tick captures as a separate line matching this pattern. We collapse
+# consecutive ticks to avoid flooding both history and SSE subscribers.
+_SPINNER_LINE_RE = re.compile(r"\(\d+s\)\.\.\.\s*$")
 
 
 class AlreadyRunning(Exception):
@@ -20,6 +28,7 @@ class PipelineRunner:
         self._loop: asyncio.AbstractEventLoop | None = None
         self.last_return_code: int | None = None
         self._on_complete: Callable[[list[str], int], None] | None = None
+        self._last_spinner_broadcast_ts: float = 0.0
 
     # --- public API -------------------------------------------------
 
@@ -33,12 +42,21 @@ class PipelineRunner:
     def history(self) -> list[str]:
         return list(self._history)
 
-    def start(self, argv: list[str], cwd: str | None = None) -> None:
+    def start(
+        self,
+        argv: list[str],
+        cwd: str | None = None,
+        on_complete: Callable[[list[str], int], None] | None = None,
+    ) -> None:
         with self._lock:
             if self.is_running():
                 raise AlreadyRunning()
             self._history.clear()
             self.last_return_code = None
+            # Bind the callback atomically with the subprocess so a stale
+            # caller's set_on_complete cannot overwrite an in-flight binding.
+            if on_complete is not None:
+                self._on_complete = on_complete
             self._proc = subprocess.Popen(
                 argv,
                 stdout=subprocess.PIPE,
@@ -90,7 +108,20 @@ class PipelineRunner:
     # --- internals --------------------------------------------------
 
     def _fanout(self, line: str) -> None:
-        self._history.append(line)
+        is_spinner = bool(_SPINNER_LINE_RE.search(line))
+        if is_spinner:
+            # Replace the previous tick in history so it stays compact.
+            if self._history and _SPINNER_LINE_RE.search(self._history[-1]):
+                self._history[-1] = line
+            else:
+                self._history.append(line)
+            # Rate-limit broadcasts so the browser doesn't get ~10 events/sec.
+            now = time.monotonic()
+            if now - self._last_spinner_broadcast_ts < 1.0:
+                return
+            self._last_spinner_broadcast_ts = now
+        else:
+            self._history.append(line)
         if self._loop is None:
             return
         for q in list(self._subscribers):
@@ -103,9 +134,13 @@ class PipelineRunner:
         proc.wait()
         self.last_return_code = proc.returncode
         self._fanout(f"EXIT {proc.returncode}")
-        if self._on_complete is not None:
+        # Consume the callback so stale bindings don't leak to the next run.
+        with self._lock:
+            cb = self._on_complete
+            self._on_complete = None
+        if cb is not None:
             try:
-                self._on_complete(argv, proc.returncode)
+                cb(argv, proc.returncode)
             except Exception:
                 pass
 

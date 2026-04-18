@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import clips, fs, pipeline
+from app.routes._context import nav_counts
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / "templates"))
@@ -32,10 +33,9 @@ def speakers_index(request: Request):
             "active_tab": "speakers",
             "clips": unknown_clips,
             "known_names": fs.list_known_names(),
-            "speakers_count": len(unknown_clips),
-            "pipeline_running": pipeline.get_runner().is_running(),
             "labels_since_reset": clips.labels_since_reset(),
             "unknown_meetings_count": _unknown_meetings_count(),
+            **nav_counts(),
         },
     )
 
@@ -62,9 +62,12 @@ def _reset_counter_on_reclassify_success(argv_: list[str], rc: int) -> None:
 @router.post("/speakers/reclassify")
 def reclassify_all():
     r = pipeline.get_runner()
-    r.set_on_complete(_reset_counter_on_reclassify_success)
     try:
-        r.start(build_reclassify_all_argv(), cwd=str(ROOT))
+        r.start(
+            build_reclassify_all_argv(),
+            cwd=str(ROOT),
+            on_complete=_reset_counter_on_reclassify_success,
+        )
     except pipeline.AlreadyRunning:
         raise HTTPException(status_code=409, detail="Pipeline already running")
     return RedirectResponse("/pipeline", status_code=303)

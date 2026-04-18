@@ -2,6 +2,16 @@
   <header class="detail-head">
     <h2>{{ meeting.stem }}</h2>
     <div class="actions">
+      {% if prev_meeting %}
+        <a class="mini-btn" href="/meetings/{{ prev_meeting.subdir }}/{{ prev_meeting.stem }}?view={{ view }}">← Prev</a>
+      {% else %}
+        <span class="mini-btn disabled">← Prev</span>
+      {% endif %}
+      {% if next_meeting %}
+        <a class="mini-btn" href="/meetings/{{ next_meeting.subdir }}/{{ next_meeting.stem }}?view={{ view }}">Next →</a>
+      {% else %}
+        <span class="mini-btn disabled">Next →</span>
+      {% endif %}
       <a class="mini-btn" href="/video/meeting/{{ meeting.subdir }}/{{ meeting.stem }}" target="_blank">▶ Open video</a>
       <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/reextract" style="display:inline;">
         <button class="mini-btn" type="submit" {% if not meeting.has_transcript %}disabled{% endif %}>↻ Re-extract</button>
@@ -12,13 +22,49 @@
     </div>
   </header>
   <nav class="subtabs">
-    <a class="subtab {% if view == 'transcript' %}active{% endif %}"
-       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=transcript">Transcript</a>
     <a class="subtab {% if view == 'knowledge' %}active{% endif %}"
        href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=knowledge">Knowledge</a>
     <a class="subtab {% if view == 'commitments' %}active{% endif %}"
        href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=commitments">Commitments</a>
+    <a class="subtab {% if view == 'transcript' %}active{% endif %}"
+       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=transcript">Transcript</a>
   </nav>
+  <div class="meeting-tags">
+    <span class="label">Tags</span>
+    {% if meeting_tags %}
+      {% for t in meeting_tags %}
+        <span class="tag tag-{{ t.type }}">{{ {"person":"👤","topic":"🏷","project":"📁"}[t.type] }} {{ t.name }}</span>
+      {% endfor %}
+    {% else %}
+      <span class="subtitle">no tags</span>
+    {% endif %}
+  </div>
+  <details class="tag-edit">
+    <summary>Edit tags</summary>
+    <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/tags">
+      <div class="tag-edit-rows">
+        {% for t in meeting_tags %}
+          <div class="tag-edit-row">
+            <input name="tag_name" value="{{ t.name }}">
+            <select name="tag_type">
+              {% for opt in ['person', 'topic', 'project'] %}
+                <option value="{{ opt }}" {% if t.type == opt %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endfor %}
+        <div class="tag-edit-row">
+          <input name="tag_name" placeholder="new tag">
+          <select name="tag_type">
+            <option value="topic">topic</option>
+            <option value="person">person</option>
+            <option value="project">project</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="mini-btn">Save tags</button>
+    </form>
+  </details>
   <div class="subview">
     {% if view == 'transcript' %}
       <pre class="transcript">{{ transcript_html|safe }}</pre>

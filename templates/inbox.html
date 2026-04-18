@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Inbox — Transcribe{% endblock %}
+{% block content %}
+<section class="inbox-page">
+  {% if not watcher_enabled %}
+  <div class="banner">
+    Watcher disabled. Set <code>WATCH_DIR</code> in <code>.env</code> and restart the server to enable auto-ingestion.
+  </div>
+  {% endif %}
+
+  {% if proposals %}
+    {% for p in proposals %}
+      {% set proposal = p %}
+      {% include "_inbox_card.html" %}
+    {% endfor %}
+  {% else %}
+    <p class="subtitle">Inbox is empty. New recordings in <code>WATCH_DIR</code> will land here.</p>
+  {% endif %}
+</section>
+{% endblock %}

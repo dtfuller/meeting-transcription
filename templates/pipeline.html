@@ -20,6 +20,14 @@
   <script>
     (function () {
       const log = document.getElementById('log');
+      if (log) log.scrollTop = log.scrollHeight;
+    })();
+  </script>
+
+  {% if is_running %}
+  <script>
+    (function () {
+      const log = document.getElementById('log');
       const es = new EventSource('/pipeline/stream');
       es.onmessage = (e) => {
         log.textContent += '\n' + e.data;
@@ -31,5 +39,6 @@
       };
     })();
   </script>
+  {% endif %}
 </section>
 {% endblock %}
