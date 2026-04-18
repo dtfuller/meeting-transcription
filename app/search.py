@@ -74,3 +74,33 @@ def reindex_all() -> int:
 def row_count() -> int:
     with store.connect() as c:
         return c.execute("SELECT COUNT(*) AS n FROM meetings_fts").fetchone()["n"]
+
+
+def search(query: str, limit: int = 50) -> list[SearchHit]:
+    q = (query or "").strip()
+    if not q:
+        return []
+    # FTS5 snippet: column_index 3 = body; left/right markers; ellipsis; max tokens
+    sql = (
+        "SELECT stem, subdir, kind, "
+        "snippet(meetings_fts, 3, '<mark>', '</mark>', '…', 12) AS snippet, "
+        "rank "
+        "FROM meetings_fts WHERE meetings_fts MATCH ? "
+        "ORDER BY rank LIMIT ?"
+    )
+    import sqlite3
+    try:
+        with store.connect() as c:
+            rows = c.execute(sql, (q, limit)).fetchall()
+    except sqlite3.OperationalError:
+        return []
+    return [
+        SearchHit(
+            stem=r["stem"],
+            subdir=r["subdir"],
+            kind=r["kind"],
+            snippet=r["snippet"] or "",
+            rank=r["rank"],
+        )
+        for r in rows
+    ]

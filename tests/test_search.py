@@ -65,3 +65,41 @@ def test_delete_meeting_from_index():
             ("2026-04-14 17-00-43",),
         ).fetchone()["n"]
     assert n == 0
+
+
+def test_search_finds_transcript_content():
+    search.reindex_all()
+    # Sample transcript contains "David Fuller" and "Darwin Henao"
+    hits = search.search("David Fuller")
+    assert len(hits) >= 1
+    # FTS5 may wrap each word individually, so check both words appear in snippet
+    assert any(
+        h.kind == "transcript" and "David" in h.snippet and "Fuller" in h.snippet
+        for h in hits
+    )
+
+
+def test_search_snippet_wraps_match_in_mark():
+    search.reindex_all()
+    hits = search.search("David Fuller")
+    assert any("<mark>" in h.snippet for h in hits)
+
+
+def test_search_empty_query_returns_empty_list():
+    search.reindex_all()
+    assert search.search("") == []
+    assert search.search("   ") == []
+
+
+def test_search_malformed_query_returns_empty_list():
+    search.reindex_all()
+    # FTS5 special chars that aren't balanced/escaped
+    assert search.search('"unclosed') == []
+    # Another malformed pattern
+    assert search.search("AND") == []  # bare operator raises OperationalError
+
+
+def test_search_respects_limit():
+    search.reindex_all()
+    hits = search.search("hola", limit=1)
+    assert len(hits) <= 1
