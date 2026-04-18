@@ -95,3 +95,9 @@ pre.log { background: #0a0a0a; color: #9df; padding: 0.75rem 1rem; border-radius
 .tag-edit-rows { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.4rem 0; }
 .tag-edit-row { display: flex; gap: 0.4rem; }
 .tag-edit-row input, .tag-edit-row select { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.25rem 0.5rem; color: var(--text); }
+.config-page { max-width: 640px; display: flex; flex-direction: column; gap: 0.75rem; }
+.config-form { display: flex; flex-direction: column; gap: 0.75rem; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem 1rem; }
+.config-form .label-text { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; }
+.watch-dir-row { display: flex; gap: 0.5rem; }
+.watch-dir-row input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.55rem; color: var(--text); font-family: inherit; }
+.primary-btn { align-self: flex-start; background: var(--accent); color: white; border: none; border-radius: 6px; padding: 0.45rem 1rem; font-weight: 600; cursor: pointer; }

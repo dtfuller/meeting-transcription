@@ -126,3 +126,14 @@ class Watcher:
                         self._callback(p)
                 except Exception:
                     pass
+
+
+_shared: Watcher | None = None
+
+
+def get_shared() -> Watcher:
+    """Module-level Watcher singleton used by both inbox and config routes."""
+    global _shared
+    if _shared is None:
+        _shared = Watcher()
+    return _shared
