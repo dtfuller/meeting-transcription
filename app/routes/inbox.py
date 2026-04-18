@@ -9,7 +9,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app import fs, ingest, store, watcher as watcher_mod
+from app import fs, ingest, search, store, watcher as watcher_mod
 from app.routes._context import nav_counts
 
 router = APIRouter()
@@ -80,6 +80,10 @@ def inbox_apply(
     store.set_meeting_tags(stem, tags, source="auto" if proposal.proposed_subdir else "manual")
 
     store.delete_proposal(stem)
+    try:
+        search.reindex_meeting(stem)
+    except Exception:
+        pass  # best-effort; files have already moved
     return RedirectResponse(f"/meetings/{target_subdir}/{stem}", status_code=303)
 
 

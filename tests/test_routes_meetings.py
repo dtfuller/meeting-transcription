@@ -82,12 +82,14 @@ HELPER = Path(__file__).parent / "helpers" / "fake_pipeline.py"
 
 
 def test_post_reextract_starts_runner(app_with_tree, monkeypatch):
-    from app import pipeline
+    from app import pipeline, search
     pipeline.get_runner().reset_for_tests()
     monkeypatch.setattr(
         "app.routes.meetings.build_reextract_argv",
         lambda m: [sys.executable, str(HELPER)],
     )
+    reindexed: list[str] = []
+    monkeypatch.setattr(search, "reindex_meeting", lambda stem: reindexed.append(stem))
     r = app_with_tree.post(
         "/meetings/multiturbo/2026-04-14 17-00-43/reextract",
         follow_redirects=False,
@@ -97,6 +99,11 @@ def test_post_reextract_starts_runner(app_with_tree, monkeypatch):
     for _ in range(200):
         if not pipeline.get_runner().is_running(): break
         time.sleep(0.05)
+    # Allow on_complete to fire after the pump thread exits
+    for _ in range(20):
+        if reindexed: break
+        time.sleep(0.05)
+    assert "2026-04-14 17-00-43" in reindexed
 
 
 def test_post_reclassify_one_starts_runner(app_with_tree, monkeypatch):

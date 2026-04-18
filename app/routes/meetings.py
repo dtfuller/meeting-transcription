@@ -10,7 +10,18 @@ from fastapi.templating import Jinja2Templates
 from app import fs
 from app import markdown as md_render
 from app import pipeline
+from app import search
 from app import store
+
+
+def _reindex_on_success(stem: str):
+    def cb(argv: list[str], rc: int) -> None:
+        if rc == 0:
+            try:
+                search.reindex_meeting(stem)
+            except Exception:
+                pass
+    return cb
 from app.routes._context import nav_counts
 
 ROOT = Path(__file__).parent.parent.parent
@@ -109,7 +120,10 @@ def reextract(subdir: str, stem: str):
     if m is None:
         raise HTTPException(404)
     try:
-        pipeline.get_runner().start(build_reextract_argv(m), cwd=str(ROOT))
+        pipeline.get_runner().start(
+            build_reextract_argv(m), cwd=str(ROOT),
+            on_complete=_reindex_on_success(stem),
+        )
     except pipeline.AlreadyRunning:
         raise HTTPException(409, "Pipeline already running")
     return RedirectResponse("/pipeline", status_code=303)
@@ -121,7 +135,10 @@ def reclassify_one(subdir: str, stem: str):
     if m is None:
         raise HTTPException(404)
     try:
-        pipeline.get_runner().start(build_reclassify_argv(m), cwd=str(ROOT))
+        pipeline.get_runner().start(
+            build_reclassify_argv(m), cwd=str(ROOT),
+            on_complete=_reindex_on_success(stem),
+        )
     except pipeline.AlreadyRunning:
         raise HTTPException(409, "Pipeline already running")
     return RedirectResponse("/pipeline", status_code=303)
