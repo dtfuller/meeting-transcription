@@ -80,3 +80,37 @@ def test_status_reflects_running_state(tmp_path):
     finally:
         w.stop()
     assert not w.is_running()
+
+
+def test_reconfigure_restarts_with_new_path(tmp_path):
+    a = tmp_path / "a"
+    b = tmp_path / "b"
+    a.mkdir()
+    b.mkdir()
+
+    received: list[Path] = []
+
+    def on_new(p: Path):
+        received.append(p)
+
+    w = watcher.Watcher(stability_seconds=0.1, poll_interval=0.1)
+    w.start(a, on_new)
+    try:
+        # Reconfigure to b
+        w.reconfigure(b)
+        assert w.is_running()
+        assert w.status()["watch_dir"] == str(b)
+
+        # New file in b should now fire
+        (b / "test.mov").write_bytes(b"\x00" * 16)
+        assert _wait_for(lambda: len(received) > 0, timeout=3.0)
+        assert received[0].parent == b
+    finally:
+        w.stop()
+
+
+def test_reconfigure_when_not_running_is_noop(tmp_path):
+    w = watcher.Watcher(stability_seconds=0.1, poll_interval=0.1)
+    # Not started; reconfigure should not raise, and should not start
+    w.reconfigure(tmp_path)
+    assert not w.is_running()
