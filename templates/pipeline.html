@@ -17,6 +17,7 @@
 {% for line in history %}{{ line }}
 {% endfor %}</pre>
 
+  {% if is_running %}
   <script>
     (function () {
       const log = document.getElementById('log');
@@ -31,5 +32,6 @@
       };
     })();
   </script>
+  {% endif %}
 </section>
 {% endblock %}
