@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import html as html_escape
 from dataclasses import dataclass
 
 from app import fs, store
+
+# Ascii SOH/STX markers passed to FTS5 snippet() and replaced with real
+# <mark> tags AFTER html-escaping the body — keeps user-sourced snippet
+# content XSS-safe while still rendering the highlight as HTML.
+_HL_START = "\x01"
+_HL_END = "\x02"
 
 
 @dataclass(frozen=True)
@@ -76,14 +83,27 @@ def row_count() -> int:
         return c.execute("SELECT COUNT(*) AS n FROM meetings_fts").fetchone()["n"]
 
 
+def _render_snippet(raw: str) -> str:
+    """HTML-escape the body, then replace control markers with real <mark> tags."""
+    escaped = html_escape.escape(raw)
+    return (
+        escaped
+        .replace(_HL_START, "<mark>")
+        .replace(_HL_END, "</mark>")
+    )
+
+
 def search(query: str, limit: int = 50) -> list[SearchHit]:
     q = (query or "").strip()
     if not q:
         return []
-    # FTS5 snippet: column_index 3 = body; left/right markers; ellipsis; max tokens
+    # FTS5 snippet: column_index 3 = body; left/right markers; ellipsis; max tokens.
+    # We pass ASCII control chars as markers so we can html-escape the body first
+    # and then substitute real <mark> tags — keeps the snippet XSS-safe for |safe
+    # rendering in the template.
     sql = (
         "SELECT stem, subdir, kind, "
-        "snippet(meetings_fts, 3, '<mark>', '</mark>', '…', 12) AS snippet, "
+        "snippet(meetings_fts, 3, ?, ?, '…', 12) AS snippet, "
         "rank "
         "FROM meetings_fts WHERE meetings_fts MATCH ? "
         "ORDER BY rank LIMIT ?"
@@ -91,7 +111,7 @@ def search(query: str, limit: int = 50) -> list[SearchHit]:
     import sqlite3
     try:
         with store.connect() as c:
-            rows = c.execute(sql, (q, limit)).fetchall()
+            rows = c.execute(sql, (_HL_START, _HL_END, q, limit)).fetchall()
     except sqlite3.OperationalError:
         return []
     return [
@@ -99,7 +119,7 @@ def search(query: str, limit: int = 50) -> list[SearchHit]:
             stem=r["stem"],
             subdir=r["subdir"],
             kind=r["kind"],
-            snippet=r["snippet"] or "",
+            snippet=_render_snippet(r["snippet"] or ""),
             rank=r["rank"],
         )
         for r in rows

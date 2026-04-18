@@ -33,8 +33,8 @@ def test_search_page_with_query_shows_hits(client):
     assert r.status_code == 200
     # Matching meeting stem should appear
     assert "2026-04-14 17-00-43" in r.text
-    # Snippet with &lt;mark&gt; tag
-    assert "&lt;mark&gt;" in r.text
+    # Snippet contains real <mark> tags so the browser renders the highlight
+    assert "<mark>" in r.text
 
 
 def test_search_hit_links_to_meeting_with_correct_view(client):
@@ -53,3 +53,16 @@ def test_search_page_echoes_query_in_input(client):
     r = client.get("/search?q=David+Fuller")
     # The input field should be pre-populated with the submitted query
     assert 'value="David Fuller"' in r.text
+
+
+def test_search_snippet_escapes_html_in_body(client, tmp_path):
+    from app import search as search_mod
+    # Inject a meeting whose transcript contains an HTML tag. Reindex.
+    transcript = tmp_path / "transcripts" / "multiturbo" / "2026-04-14 17-00-43.txt"
+    transcript.write_text("[00:00:00 David] <script>alert('xss')</script> pwned")
+    search_mod.reindex_all()
+    r = client.get("/search?q=pwned")
+    assert r.status_code == 200
+    # The user content must be escaped — no raw <script> tag should reach the page
+    assert "<script>" not in r.text
+    assert "&lt;script&gt;" in r.text
