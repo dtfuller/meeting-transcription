@@ -146,11 +146,11 @@ def test_post_meeting_tags_replaces_tags(app_with_tree_with_tags):
 
 def test_meeting_detail_has_prev_and_next(app_with_tree):
     # Sorted order: check-in/2026-04-17 → multiturbo/2026-04-14 → multiturbo/2026-04-16
-    # The middle one has both neighbors.
+    # The middle one has both neighbors. URLs are percent-encoded (%20 for space).
     r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43")
     assert r.status_code == 200
-    assert "/meetings/check-in/2026-04-17 09-00-00" in r.text
-    assert "/meetings/multiturbo/2026-04-16 17-01-16" in r.text
+    assert "/meetings/check-in/2026-04-17%2009-00-00" in r.text
+    assert "/meetings/multiturbo/2026-04-16%2017-01-16" in r.text
 
 
 def test_first_meeting_has_no_prev_link(app_with_tree):
@@ -163,3 +163,18 @@ def test_last_meeting_has_no_next_link(app_with_tree):
     r = app_with_tree.get("/meetings/multiturbo/2026-04-16 17-01-16")
     assert r.status_code == 200
     assert '<span class="mini-btn disabled">Next →' in r.text
+
+
+def test_meeting_detail_defaults_to_knowledge_subtab(app_with_tree):
+    # Visiting a meeting without ?view= must land on Knowledge, not Transcript.
+    r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43")
+    assert r.status_code == 200
+
+    def subtab_is_active(label: str) -> bool:
+        tail = r.text.find(f">{label}</a>")
+        head = r.text.rfind("<a ", 0, tail)
+        return "active" in r.text[head:tail]
+
+    assert subtab_is_active("Knowledge")
+    assert not subtab_is_active("Transcript")
+    assert not subtab_is_active("Commitments")
