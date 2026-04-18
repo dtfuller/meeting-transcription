@@ -165,6 +165,42 @@ def test_last_meeting_has_no_next_link(app_with_tree):
     assert '<span class="mini-btn disabled">Next →' in r.text
 
 
+def test_tree_renders_flat_for_small_subdir(app_with_tree):
+    # Sample tree has 2 meetings in multiturbo, 1 in check-in — all below threshold.
+    r = app_with_tree.get("/meetings")
+    assert r.status_code == 200
+    # No <details> element because nothing is grouped.
+    assert "<details" not in r.text
+
+
+def test_tree_renders_details_groups_when_subdir_exceeds_threshold(tmp_path, monkeypatch):
+    # Build a fresh tree with 11 meetings in one subdir spanning two months.
+    from app import fs, store
+    from server import create_app
+    monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
+    monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
+    monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
+    monkeypatch.setattr(fs, "KNOWN_NAMES_TO_USE", tmp_path / "known-names" / "to-use")
+    monkeypatch.setattr(fs, "KNOWN_NAMES_TO_CLASSIFY", tmp_path / "known-names" / "to-classify")
+    monkeypatch.setattr(store, "DB_PATH", tmp_path / "ui.db")
+    store.init_schema()
+    # 5 in April, 6 in May → 11 total, above the default threshold of 10
+    for day in range(1, 6):
+        p = tmp_path / "data" / "big" / f"2026-04-{day:02d} 10-00-00.mov"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(b"\x00" * 16)
+    for day in range(1, 7):
+        p = tmp_path / "data" / "big" / f"2026-05-{day:02d} 10-00-00.mov"
+        p.write_bytes(b"\x00" * 16)
+
+    client = TestClient(create_app())
+    r = client.get("/meetings")
+    assert r.status_code == 200
+    assert '<details class="month-group" open>' in r.text  # most-recent May open
+    assert "2026-05" in r.text
+    assert "2026-04" in r.text
+
+
 def test_meeting_detail_defaults_to_knowledge_subtab(app_with_tree):
     # Visiting a meeting without ?view= must land on Knowledge, not Transcript.
     r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43")

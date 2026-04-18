@@ -1,29 +1,19 @@
 <aside class="tree">
-  {% set current_subdir = namespace(v=None) %}
-  {% for m in meetings %}
-    {% if m.subdir != current_subdir.v %}
-      {% if not loop.first %}</ul>{% endif %}
-      <div class="folder">📁 {{ m.subdir }}</div>
+  {% for block in meeting_blocks %}
+    <div class="folder">📁 {{ block.subdir }}</div>
+    {% if block.is_grouped %}
+      {% for month in block.months %}
+        <details class="month-group"{% if month.open %} open{% endif %}>
+          <summary>📅 {{ month.label }} <span class="month-count">({{ month.meetings|length }})</span></summary>
+          <ul>
+            {% for m in month.meetings %}{% include "_meeting_row.html" %}{% endfor %}
+          </ul>
+        </details>
+      {% endfor %}
+    {% else %}
       <ul>
-      {% set current_subdir.v = m.subdir %}
+        {% for m in block.flat %}{% include "_meeting_row.html" %}{% endfor %}
+      </ul>
     {% endif %}
-    <li>
-      <a href="/meetings/{{ m.subdir }}/{{ m.stem }}"
-         class="{% if selected and selected.subdir == m.subdir and selected.stem == m.stem %}hl{% endif %}">
-        {{ m.stem }}
-        {% if m.unknown_count %}<span class="badge">{{ m.unknown_count }}</span>{% endif %}
-      </a>
-      {% set tags = tags_by_stem.get(m.stem, []) %}
-      {% if tags %}
-        <div class="row-tags">
-          {% for t in tags %}
-            <a class="tag tag-{{ t.type }}"
-               href="/meetings?tag={{ t.name|urlencode }}&amp;tag_type={{ t.type }}"
-               >{{ {"person":"👤","topic":"🏷","project":"📁"}[t.type] }} {{ t.name }}</a>
-          {% endfor %}
-        </div>
-      {% endif %}
-    </li>
   {% endfor %}
-  {% if meetings %}</ul>{% endif %}
 </aside>

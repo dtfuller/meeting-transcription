@@ -46,12 +46,14 @@ def meetings_index(request: Request, tag: str | None = None, tag_type: str | Non
         allowed_stems = set(store.list_stems_with_tag(tag, tag_type))
         meetings = [m for m in meetings if m.stem in allowed_stems]
     tags_by_stem = {m.stem: store.list_meeting_tags(m.stem) for m in meetings}
+    meeting_blocks = fs.group_meetings(meetings)
     return templates.TemplateResponse(
         request,
         "meetings.html",
         {
             "active_tab": "meetings",
             "meetings": meetings,
+            "meeting_blocks": meeting_blocks,
             "meeting": None,
             "selected": None,
             "tags_by_stem": tags_by_stem,
@@ -77,12 +79,14 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowle
     )
     prev_meeting = meetings[idx - 1] if idx is not None and idx > 0 else None
     next_meeting = meetings[idx + 1] if idx is not None and idx < len(meetings) - 1 else None
+    meeting_blocks = fs.group_meetings(meetings)
     return templates.TemplateResponse(
         request,
         "meetings.html",
         {
             "active_tab": "meetings",
             "meetings": meetings,
+            "meeting_blocks": meeting_blocks,
             "meeting": m,
             "selected": m,
             "view": view,
