@@ -1,0 +1,8 @@
+<a class="search-hit" href="/meetings/{{ hit.subdir|urlencode }}/{{ hit.stem|urlencode }}?view={{ hit.kind }}">
+  <div class="search-hit-head">
+    <span class="search-hit-stem">{{ hit.stem }}</span>
+    <span class="search-hit-kind">{{ hit.kind }}</span>
+    <span class="search-hit-subdir">{{ hit.subdir }}</span>
+  </div>
+  <div class="search-hit-snippet">{{ hit.snippet }}</div>
+</a>
