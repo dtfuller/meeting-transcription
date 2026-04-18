@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import subprocess
 import threading
+import time
 from collections import deque
 from typing import AsyncIterator, Callable
+
+# transcribe.py's _spinner re-renders one terminal line every ~100 ms via \r.
+# Python's text-mode subprocess translates \r to \n (universal newlines), so
+# each tick captures as a separate line matching this pattern. We collapse
+# consecutive ticks to avoid flooding both history and SSE subscribers.
+_SPINNER_LINE_RE = re.compile(r"\(\d+s\)\.\.\.\s*$")
 
 
 class AlreadyRunning(Exception):
@@ -20,6 +28,7 @@ class PipelineRunner:
         self._loop: asyncio.AbstractEventLoop | None = None
         self.last_return_code: int | None = None
         self._on_complete: Callable[[list[str], int], None] | None = None
+        self._last_spinner_broadcast_ts: float = 0.0
 
     # --- public API -------------------------------------------------
 
@@ -99,7 +108,20 @@ class PipelineRunner:
     # --- internals --------------------------------------------------
 
     def _fanout(self, line: str) -> None:
-        self._history.append(line)
+        is_spinner = bool(_SPINNER_LINE_RE.search(line))
+        if is_spinner:
+            # Replace the previous tick in history so it stays compact.
+            if self._history and _SPINNER_LINE_RE.search(self._history[-1]):
+                self._history[-1] = line
+            else:
+                self._history.append(line)
+            # Rate-limit broadcasts so the browser doesn't get ~10 events/sec.
+            now = time.monotonic()
+            if now - self._last_spinner_broadcast_ts < 1.0:
+                return
+            self._last_spinner_broadcast_ts = now
+        else:
+            self._history.append(line)
         if self._loop is None:
             return
         for q in list(self._subscribers):
