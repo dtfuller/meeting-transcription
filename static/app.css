@@ -101,3 +101,7 @@ pre.log { background: #0a0a0a; color: #9df; padding: 0.75rem 1rem; border-radius
 .watch-dir-row { display: flex; gap: 0.5rem; }
 .watch-dir-row input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.55rem; color: var(--text); font-family: inherit; }
 .primary-btn { align-self: flex-start; background: var(--accent); color: white; border: none; border-radius: 6px; padding: 0.45rem 1rem; font-weight: 600; cursor: pointer; }
+.search { flex: 1; max-width: 340px; }
+.search input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.55rem; color: var(--text); font-family: inherit; font-size: 0.85rem; }
+.gear { color: var(--muted); text-decoration: none; font-size: 1.1rem; padding: 0.2rem 0.4rem; }
+.gear:hover { color: var(--accent); }
