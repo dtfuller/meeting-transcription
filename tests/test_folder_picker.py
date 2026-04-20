@@ -12,10 +12,10 @@ def test_pick_folder_returns_none_when_cancelled(monkeypatch):
     assert folder_picker.pick_folder() is None
 
 
-def test_pick_folder_returns_none_when_tkinter_missing(monkeypatch):
-    def raise_import(initial):
-        raise ImportError("no tkinter")
-    monkeypatch.setattr(folder_picker, "_show_dialog", raise_import)
+def test_pick_folder_returns_none_on_show_dialog_error(monkeypatch):
+    def raise_any(initial):
+        raise RuntimeError("boom")
+    monkeypatch.setattr(folder_picker, "_show_dialog", raise_any)
     assert folder_picker.pick_folder() is None
 
 

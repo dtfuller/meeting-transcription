@@ -1,47 +1,50 @@
 from __future__ import annotations
 
-import threading
+import platform
+import subprocess
 
 
 def _show_dialog(initial: str | None) -> str | None:
-    """Invoke tkinter.filedialog.askdirectory in a hidden-root context.
+    """Open a native folder picker and return the chosen POSIX path.
 
-    Raises ImportError if tkinter is not available (e.g. headless CI).
-    Returns the chosen absolute path, or None if the user cancelled.
+    macOS: uses AppleScript (``osascript``) so the dialog runs in a fresh
+    subprocess with its own main thread. tkinter's ``Tk()`` on a non-main
+    thread is silently broken on macOS, so we avoid it entirely.
+
+    Other platforms: returns None today. Plug a tkinter fallback in here if
+    the app ever runs on Linux/Windows.
     """
-    import tkinter  # noqa: F401  # raise ImportError early if missing
-    from tkinter import Tk, filedialog
+    if platform.system() != "Darwin":
+        return None
 
-    root = Tk()
+    initial_clause = (
+        f' default location (POSIX file "{initial}" as alias)' if initial else ""
+    )
+    script = (
+        'tell application "System Events" to activate\n'
+        "try\n"
+        f'  set chosen to choose folder with prompt "Select watch directory"{initial_clause}\n'
+        "  return POSIX path of chosen\n"
+        "on error\n"
+        '  return ""\n'
+        "end try\n"
+    )
     try:
-        root.withdraw()  # hide the empty root window
-        root.attributes("-topmost", True)  # bring the dialog forward on macOS
-        chosen = filedialog.askdirectory(initialdir=initial or "")
-        return chosen or None
-    finally:
-        root.destroy()
+        result = subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    path = (result.stdout or "").strip()
+    return path or None
 
 
 def pick_folder(initial: str | None = None) -> str | None:
-    """Open a native folder picker and return the chosen absolute path.
-
-    Runs the dialog in a worker thread so a blocking call in an async
-    web handler doesn't starve the event loop. Returns None if the user
-    cancels or tkinter is unavailable.
-    """
-    result: dict[str, str | None] = {"path": None}
-    error: dict[str, BaseException | None] = {"err": None}
-
-    def target():
-        try:
-            result["path"] = _show_dialog(initial)
-        except Exception as e:  # pragma: no cover — production-only path
-            error["err"] = e
-
-    t = threading.Thread(target=target, daemon=True)
-    t.start()
-    t.join()
-
-    if error["err"] is not None:
+    """Open the native folder picker. Returns the chosen path or None."""
+    try:
+        return _show_dialog(initial)
+    except Exception:
         return None
-    return result["path"]
