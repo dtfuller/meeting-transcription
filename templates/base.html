@@ -82,5 +82,26 @@
       });
     })();
   </script>
+  <script>
+    (function () {
+      document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.more-toggle');
+        if (!btn) return;
+        e.preventDefault();
+        const overflow = btn.nextElementSibling;
+        if (!overflow || !overflow.classList.contains('row-tags-overflow')) return;
+        const wasHidden = overflow.hasAttribute('hidden');
+        if (wasHidden) {
+          overflow.removeAttribute('hidden');
+          btn.setAttribute('aria-expanded', 'true');
+          btn.textContent = 'show less';
+        } else {
+          overflow.setAttribute('hidden', '');
+          btn.setAttribute('aria-expanded', 'false');
+          btn.textContent = '+' + overflow.querySelectorAll('.tag').length + ' more';
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

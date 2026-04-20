@@ -13,6 +13,15 @@ from app import search
 from app import store
 
 
+def _split_row_tags(tags: list[store.Tag]) -> dict:
+    persons = [t for t in tags if t.type == "person"]
+    others = [t for t in tags if t.type in ("topic", "project")]
+    visible = persons[:3] + others[:2]
+    visible_set = {(t.type, t.name) for t in visible}
+    hidden = [t for t in tags if (t.type, t.name) not in visible_set]
+    return {"visible": visible, "hidden": hidden}
+
+
 def _reindex_on_success(stem: str):
     def cb(argv: list[str], rc: int) -> None:
         if rc == 0:
@@ -49,6 +58,7 @@ def meetings_index(request: Request, tag: str | None = None, tag_type: str | Non
         allowed_stems = set(store.list_stems_with_tag(tag, tag_type))
         meetings = [m for m in meetings if m.stem in allowed_stems]
     tags_by_stem = {m.stem: store.list_meeting_tags(m.stem) for m in meetings}
+    tag_split_by_stem = {stem: _split_row_tags(t) for stem, t in tags_by_stem.items()}
     meeting_blocks = fs.group_meetings(meetings)
     return templates.TemplateResponse(
         request,
@@ -60,6 +70,7 @@ def meetings_index(request: Request, tag: str | None = None, tag_type: str | Non
             "meeting": None,
             "selected": None,
             "tags_by_stem": tags_by_stem,
+            "tag_split_by_stem": tag_split_by_stem,
             "current_tag_filter": (tag, tag_type) if tag else None,
             **nav_counts(),
         },
@@ -75,6 +86,7 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowle
         view = "knowledge"
     meetings = fs.list_meetings()
     tags_by_stem = {mm.stem: store.list_meeting_tags(mm.stem) for mm in meetings}
+    tag_split_by_stem = {stem: _split_row_tags(t) for stem, t in tags_by_stem.items()}
     idx = next(
         (i for i, mm in enumerate(meetings)
          if mm.subdir == m.subdir and mm.stem == m.stem),
@@ -100,6 +112,7 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowle
             "knowledge_html": md_render.render(fs.load_knowledge(m)),
             "commitments_html": md_render.render(fs.load_commitments(m)),
             "tags_by_stem": tags_by_stem,
+            "tag_split_by_stem": tag_split_by_stem,
             "meeting_tags": store.list_meeting_tags(stem),
             "unknown_clips": unknown_clips,
             "current_tag_filter": None,

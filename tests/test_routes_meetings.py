@@ -259,3 +259,54 @@ def test_suggest_tags_button_rendered_on_detail(app_with_tree_with_tags):
     assert r.status_code == 200
     assert "Suggest tags" in r.text
     assert 'id="suggest-tags-btn"' in r.text
+
+
+def test_split_row_tags_caps_at_3_persons_and_2_others():
+    from app import store
+    from app.routes.meetings import _split_row_tags
+    persons = [store.Tag(name=f"P{i}", type="person") for i in range(5)]
+    topics = [store.Tag(name=f"T{i}", type="topic") for i in range(3)]
+    projects = [store.Tag(name=f"J{i}", type="project") for i in range(2)]
+    split = _split_row_tags(persons + topics + projects)
+    visible_names = [t.name for t in split["visible"]]
+    hidden_names = [t.name for t in split["hidden"]]
+    assert visible_names == ["P0", "P1", "P2", "T0", "T1"]
+    assert set(hidden_names) == {"P3", "P4", "T2", "J0", "J1"}
+
+
+def test_meetings_tree_caps_tags_with_overflow(tmp_path, monkeypatch):
+    from app import fs, store
+    from server import create_app
+    monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
+    monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
+    monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
+    monkeypatch.setattr(fs, "KNOWN_NAMES_TO_USE", tmp_path / "known-names" / "to-use")
+    monkeypatch.setattr(fs, "KNOWN_NAMES_TO_CLASSIFY", tmp_path / "known-names" / "to-classify")
+    monkeypatch.setattr(store, "DB_PATH", tmp_path / "ui.db")
+    store.init_schema()
+
+    stem = "2026-05-01 10-00-00"
+    p = tmp_path / "data" / "big" / f"{stem}.mov"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_bytes(b"\x00" * 16)
+
+    persons = [store.Tag(name=f"Person{i}", type="person") for i in range(5)]
+    topics = [store.Tag(name=f"Topic{i}", type="topic") for i in range(4)]
+    store.set_meeting_tags(stem, persons + topics, source="manual")
+
+    client = TestClient(create_app())
+    r = client.get("/meetings")
+    assert r.status_code == 200
+    # First 3 persons visible
+    for name in ["Person0", "Person1", "Person2"]:
+        assert f"\U0001f464 {name}" in r.text
+    # First 2 topics visible
+    for name in ["Topic0", "Topic1"]:
+        assert f"\U0001f3f7 {name}" in r.text
+    # Overflow toggle with correct count
+    assert ">+4 more</button>" in r.text
+    # Remaining tags present in the page (inside hidden overflow)
+    for name in ["Person3", "Person4", "Topic2", "Topic3"]:
+        assert name in r.text
+    # Overflow marker present + hidden
+    assert 'class="row-tags-overflow" hidden' in r.text

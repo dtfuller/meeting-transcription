@@ -147,6 +147,15 @@ pre.log { background: #0c0a08; color: #d4c9a8; padding: 1rem 1.1rem; border-radi
 .month-group .month-count { color: var(--muted); font-weight: normal; }
 .row-tags { display: flex; flex-wrap: wrap; gap: 0.2rem; margin: 0.1rem 0 0.3rem 0.6rem; }
 .row-tags .tag { font-size: 0.65rem; padding: 0.05rem 0.35rem; text-decoration: none; color: var(--text); }
+.row-tags .more-toggle {
+  appearance: none; background: transparent; color: var(--muted);
+  border: 1px dashed var(--border); border-radius: 999px;
+  padding: 0.05rem 0.45rem; font: inherit; font-size: 0.65rem;
+  cursor: pointer; line-height: 1.4;
+}
+.row-tags .more-toggle:hover { color: var(--text); border-color: var(--muted); }
+.row-tags-overflow { display: contents; }
+.row-tags-overflow[hidden] { display: none; }
 .meeting-tags { display: flex; align-items: center; gap: 0.4rem; margin: 0.75rem 0 0.5rem; flex-wrap: wrap; }
 .meeting-tags .label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; font-family: var(--font-mono); }
 .tag-edit { margin: 0.3rem 0; font-size: 0.85rem; }
