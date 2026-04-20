@@ -17,7 +17,15 @@
   <header class="app-bar">
     <h1><a href="/" class="app-title">Transcribe</a></h1>
     <form class="search" method="get" action="/search" role="search">
-      <input type="search" name="q" placeholder="Search meetings…" aria-label="Search">
+      <input type="search" name="q"
+             placeholder="Search meetings…"
+             aria-label="Search"
+             autocomplete="off"
+             hx-get="/search/partial"
+             hx-trigger="keyup changed delay:250ms, search"
+             hx-target="#search-dropdown"
+             hx-swap="innerHTML">
+      <div id="search-dropdown" class="search-dropdown"></div>
     </form>
     <nav class="tabs" aria-label="Main tabs">
       <a href="/meetings" class="tab {% if active_tab == 'meetings' %}active{% endif %}"
@@ -59,6 +67,16 @@
         document.documentElement.dataset.theme = next;
         localStorage.setItem('transcribe.theme', next);
         paint();
+      });
+    })();
+  </script>
+  <script>
+    (function () {
+      const dd = document.getElementById('search-dropdown');
+      if (!dd) return;
+      document.addEventListener('click', function (e) {
+        const form = e.target.closest('.search');
+        if (!form) dd.innerHTML = '';
       });
     })();
   </script>
