@@ -59,7 +59,7 @@
   </details>
   <details class="preview-section"><summary>▶ Video</summary>
     {% if item.has_video %}
-      <video class="preview-video" controls preload="metadata"
+      <video class="preview-video" controls preload="none"
              src="/video/meeting/_inbox/{{ proposal.stem|urlencode }}"></video>
     {% else %}
       <p class="subtitle">Video unavailable.</p>

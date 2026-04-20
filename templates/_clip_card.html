@@ -1,5 +1,5 @@
 <article class="clip-card" id="clip-{{ clip.filename|urlencode }}">
-  <video class="clip-video" controls preload="metadata"
+  <video class="clip-video" controls preload="none"
          src="/video/clip/{{ clip.filename|urlencode }}"></video>
   <div class="clip-meta">
     <div class="clip-label">{{ clip.raw_label }}</div>
