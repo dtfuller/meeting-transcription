@@ -9,11 +9,21 @@
   --ok: #34c759;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #1d1d1f; --panel: #2d2d2f; --border: #424245;
     --text: #f5f5f7; --muted: #86868b; --accent: #0a84ff;
+    --selected-bg: rgba(10, 132, 255, 0.15);
+    --selected-border: #0a84ff;
   }
 }
+:root[data-theme="dark"] {
+  --bg: #1d1d1f; --panel: #2d2d2f; --border: #424245;
+  --text: #f5f5f7; --muted: #86868b; --accent: #0a84ff;
+  --selected-bg: rgba(10, 132, 255, 0.15);
+  --selected-border: #0a84ff;
+}
+.theme-toggle { background: transparent; border: none; color: var(--muted); font-size: 1.1rem; padding: 0.2rem 0.4rem; cursor: pointer; }
+.theme-toggle:hover { color: var(--accent); }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
 .app-bar { display: flex; align-items: center; gap: 1.5rem; padding: 0.6rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--border); }

@@ -105,3 +105,10 @@ def test_resolve_watch_dir_none_when_neither_set(tmp_path, monkeypatch):
     monkeypatch.delenv("WATCH_DIR", raising=False)
     from server import resolve_watch_dir
     assert resolve_watch_dir() is None
+
+
+def test_header_has_theme_toggle_button(client):
+    r = client.get("/meetings")
+    assert r.status_code == 200
+    assert 'id="theme-toggle"' in r.text
+    assert 'class="theme-toggle"' in r.text

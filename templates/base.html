@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <script>
+    (function () {
+      const t = localStorage.getItem('transcribe.theme') || 'auto';
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Transcribe{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
@@ -32,10 +38,29 @@
         {% if pipeline_running %}<span class="running">running</span>{% endif %}
       </a>
     </nav>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">◐</button>
     <a href="/config" class="gear" aria-label="Settings" title="Settings">⚙</a>
   </header>
   <main class="app-main">
     {% block content %}{% endblock %}
   </main>
+  <script>
+    (function () {
+      const btn = document.getElementById('theme-toggle');
+      if (!btn) return;
+      const glyphs = { auto: '◐', light: '☀', dark: '☾' };
+      const cycle = { auto: 'light', light: 'dark', dark: 'auto' };
+      function paint() {
+        btn.textContent = glyphs[document.documentElement.dataset.theme] || '◐';
+      }
+      paint();
+      btn.addEventListener('click', function () {
+        const next = cycle[document.documentElement.dataset.theme] || 'light';
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem('transcribe.theme', next);
+        paint();
+      });
+    })();
+  </script>
 </body>
 </html>
