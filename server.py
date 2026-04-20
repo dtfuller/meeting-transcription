@@ -47,6 +47,13 @@ def create_app() -> FastAPI:
             return
         w = watcher.get_shared()
         w.start(Path(watch_dir), ingest.get_coordinator().on_new_file)
+        # Scan pre-existing files in a daemon thread so startup stays snappy.
+        import threading
+        threading.Thread(
+            target=ingest.scan_existing,
+            args=(Path(watch_dir),),
+            daemon=True,
+        ).start()
 
     @app.on_event("shutdown")
     def _stop_watcher():

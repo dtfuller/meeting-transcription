@@ -140,3 +140,23 @@ def get_coordinator() -> IngestCoordinator:
     if _coordinator is None:
         _coordinator = IngestCoordinator()
     return _coordinator
+
+
+def scan_existing(watch_dir: Path) -> int:
+    """Feed any *.mov already present in watch_dir to on_new_file.
+
+    Skips stems that already exist anywhere under data/ (including _inbox),
+    so restarting the server doesn't re-ingest things we already processed.
+    Returns the number of files actually dispatched.
+    """
+    if not watch_dir.exists():
+        return 0
+    known_stems = {m.stem for m in fs.list_meetings(include_inbox=True)}
+    coordinator = get_coordinator()
+    count = 0
+    for mov in sorted(watch_dir.glob("*.mov")):
+        if mov.stem in known_stems:
+            continue
+        coordinator.on_new_file(mov)
+        count += 1
+    return count

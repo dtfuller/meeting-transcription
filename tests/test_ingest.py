@@ -109,3 +109,43 @@ def test_concurrent_ingest_queues_second_file(tmp_path, monkeypatch):
 
     assert store.get_proposal("a").status == "ready"
     assert store.get_proposal("b").status == "ready"
+
+
+def test_scan_existing_sends_unknown_files_to_ingest(tmp_path):
+    external = tmp_path / "external"
+    external.mkdir()
+    _write_mov(external / "new-a.mov")
+    _write_mov(external / "new-b.mov")
+
+    sent: list[Path] = []
+    # Bypass the real pipeline kickoff; just capture the calls
+    original = ingest.get_coordinator().on_new_file
+    ingest.get_coordinator().on_new_file = lambda p: sent.append(p)
+    try:
+        n = ingest.scan_existing(external)
+    finally:
+        ingest.get_coordinator().on_new_file = original
+
+    assert n == 2
+    names = sorted(p.name for p in sent)
+    assert names == ["new-a.mov", "new-b.mov"]
+
+
+def test_scan_existing_skips_already_known_stems(tmp_path):
+    external = tmp_path / "external"
+    external.mkdir()
+    _write_mov(external / "2026-04-14 17-00-43.mov")  # stem matches sample_assets
+    _write_mov(external / "fresh.mov")
+
+    sent: list[Path] = []
+    original = ingest.get_coordinator().on_new_file
+    ingest.get_coordinator().on_new_file = lambda p: sent.append(p)
+    try:
+        n = ingest.scan_existing(external)
+    finally:
+        ingest.get_coordinator().on_new_file = original
+
+    # Only "fresh" should pass through; the 04-14 meeting is already in the
+    # sample tree.
+    assert n == 1
+    assert sent[0].name == "fresh.mov"
