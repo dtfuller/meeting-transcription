@@ -149,3 +149,45 @@ def test_scan_existing_skips_already_known_stems(tmp_path):
     # sample tree.
     assert n == 1
     assert sent[0].name == "fresh.mov"
+
+
+def test_reconcile_stuck_proposals_reenqueues_transcribing_rows(tmp_path):
+    # Simulate: a proposal stuck in 'transcribing' whose file still lives in _inbox.
+    inbox_dir = fs.DATA_DIR / "_inbox"
+    stem = "orphan-meeting"
+    _write_mov(inbox_dir / f"{stem}.mov")
+    store.save_proposal(
+        stem=stem,
+        proposed_subdir="",
+        proposed_tags=[],
+        status="transcribing",
+        error_message=None,
+    )
+    # Another stuck proposal whose file is GONE — should be skipped.
+    store.save_proposal(
+        stem="ghost",
+        proposed_subdir="",
+        proposed_tags=[],
+        status="analyzing",
+        error_message=None,
+    )
+    # A 'ready' proposal — should be ignored.
+    _write_mov(inbox_dir / "done.mov")
+    store.save_proposal(
+        stem="done",
+        proposed_subdir="",
+        proposed_tags=[],
+        status="ready",
+        error_message=None,
+    )
+
+    n = ingest.reconcile_stuck_proposals()
+    assert n == 1
+
+    # The pipeline should have been kicked for the orphan; wait for completion.
+    for _ in range(200):
+        if not pipeline.get_runner().is_running():
+            break
+        time.sleep(0.05)
+    # The in-flight stem is cleared once done.
+    assert ingest.get_coordinator()._in_flight_stem is None

@@ -85,6 +85,19 @@ class IngestCoordinator:
             self._queue.append((inbox_path, stem))
         self._maybe_start_next()
 
+    def enqueue_existing(self, inbox_path: Path, stem: str) -> None:
+        """Re-enqueue a file already in data/_inbox. Used by startup reconcile
+        when the in-memory queue was lost across a server restart but the DB
+        still has rows stuck in 'transcribing'/'analyzing'."""
+        with self._lock:
+            # Dedupe: don't stack duplicates if called multiple times.
+            if any(s == stem for _, s in self._queue):
+                return
+            if self._in_flight_stem == stem:
+                return
+            self._queue.append((inbox_path, stem))
+        self._maybe_start_next()
+
     def _maybe_start_next(self) -> None:
         runner = pipeline.get_runner()
         with self._lock:
@@ -140,6 +153,30 @@ def get_coordinator() -> IngestCoordinator:
     if _coordinator is None:
         _coordinator = IngestCoordinator()
     return _coordinator
+
+
+def reconcile_stuck_proposals() -> int:
+    """Re-enqueue proposals whose pipeline never finished.
+
+    Looks for DB rows in 'transcribing'/'analyzing' whose file still sits in
+    data/_inbox/. The in-memory queue doesn't survive server restarts; this
+    rebuilds it from what's on disk. Pipeline is idempotent — transcribe.py
+    and extract.py skip work that's already complete.
+    """
+    inbox_dir = fs.DATA_DIR / store.INBOX_SUBDIR
+    if not inbox_dir.exists():
+        return 0
+    coordinator = get_coordinator()
+    count = 0
+    for p in store.list_pending_proposals():
+        if p.status not in ("transcribing", "analyzing"):
+            continue
+        inbox_path = inbox_dir / f"{p.stem}.mov"
+        if not inbox_path.exists():
+            continue
+        coordinator.enqueue_existing(inbox_path, p.stem)
+        count += 1
+    return count
 
 
 def scan_existing(watch_dir: Path) -> int:

@@ -42,13 +42,19 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def _start_watcher():
+        # Always reconcile orphaned proposals — independent of WATCH_DIR.
+        import threading
+        threading.Thread(
+            target=ingest.reconcile_stuck_proposals,
+            daemon=True,
+        ).start()
+
         watch_dir = resolve_watch_dir()
         if not watch_dir:
             return
         w = watcher.get_shared()
         w.start(Path(watch_dir), ingest.get_coordinator().on_new_file)
         # Scan pre-existing files in a daemon thread so startup stays snappy.
-        import threading
         threading.Thread(
             target=ingest.scan_existing,
             args=(Path(watch_dir),),
