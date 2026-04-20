@@ -10,6 +10,9 @@
 <body>
   <header class="app-bar">
     <h1><a href="/" class="app-title">Transcribe</a></h1>
+    <form class="search" method="get" action="/search" role="search">
+      <input type="search" name="q" placeholder="Search meetings…" aria-label="Search">
+    </form>
     <nav class="tabs" aria-label="Main tabs">
       <a href="/meetings" class="tab {% if active_tab == 'meetings' %}active{% endif %}"
          {% if active_tab == 'meetings' %}aria-current="page"{% endif %}>Meetings</a>
@@ -29,6 +32,7 @@
         {% if pipeline_running %}<span class="running">running</span>{% endif %}
       </a>
     </nav>
+    <a href="/config" class="gear" aria-label="Settings" title="Settings">⚙</a>
   </header>
   <main class="app-main">
     {% block content %}{% endblock %}

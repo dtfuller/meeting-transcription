@@ -12,6 +12,7 @@ KNOWN_NAMES_TO_USE = ROOT / "known-names" / "to-use"
 KNOWN_NAMES_TO_CLASSIFY = ROOT / "known-names" / "to-classify"
 
 _CLIP_TS_RE = re.compile(r"(\d+m\d+s)\.mov$")
+_MONTH_RE = re.compile(r"^(\d{4}-\d{2})")
 
 
 @dataclass(frozen=True)
@@ -135,3 +136,58 @@ def list_known_names() -> list[str]:
         person = mov.stem.split(" - ")[0].strip()
         seen.setdefault(person, None)
     return list(seen.keys())
+
+
+def group_meetings(meetings: list[Meeting], threshold: int = 10) -> list[dict]:
+    """Group meetings by (subdir, YYYY-MM) when a subdir has >threshold entries.
+
+    Returns a list of subdir blocks. Each block has ``subdir``, ``is_grouped``
+    (True/False), and either ``flat`` (a list of Meeting) or ``months`` (a list
+    of ``{"label", "meetings", "open"}`` dicts sorted newest-first; the
+    most-recent month has ``open=True``).
+    """
+    by_subdir: dict[str, list[Meeting]] = {}
+    for m in meetings:
+        by_subdir.setdefault(m.subdir, []).append(m)
+
+    blocks: list[dict] = []
+    for subdir in sorted(by_subdir):
+        items = by_subdir[subdir]
+        if len(items) <= threshold:
+            blocks.append({
+                "subdir": subdir,
+                "is_grouped": False,
+                "flat": items,
+                "months": None,
+            })
+            continue
+        by_month: dict[str, list[Meeting]] = {}
+        for m in items:
+            match = _MONTH_RE.match(m.stem)
+            label = match.group(1) if match else "other"
+            by_month.setdefault(label, []).append(m)
+        # Sort descending, with "other" always last regardless of character order.
+        sorted_labels = sorted(
+            by_month.keys(),
+            key=lambda label: (label == "other", label),
+            reverse=True,
+        )
+        # The descending sort above puts "other" first because (True, ...) > (False, ...).
+        # Move it to the end if present.
+        if "other" in sorted_labels:
+            sorted_labels = [l for l in sorted_labels if l != "other"] + ["other"]
+        months = [
+            {
+                "label": label,
+                "meetings": by_month[label],
+                "open": i == 0,
+            }
+            for i, label in enumerate(sorted_labels)
+        ]
+        blocks.append({
+            "subdir": subdir,
+            "is_grouped": True,
+            "flat": None,
+            "months": months,
+        })
+    return blocks

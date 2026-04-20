@@ -106,3 +106,21 @@ Module layout added in Round 2:
 - `app/routes/_context.py` — shared `nav_counts()` helper used by every tab.
 
 The Round 1 CLI scripts (`transcribe.py`, `extract.py`, `process.py`) remain unchanged.
+
+## Web UI (Round 3)
+
+Round 3 adds:
+
+- **Config page** (`/config`, gear icon in the header) — in-app form for `WATCH_DIR` with a native macOS folder picker (tkinter). Saves to `ui.json` at the repo root (gitignored). Watcher hot-reloads on save — no server restart.
+- **Month grouping in the Meetings tree** — when a subdir has more than 10 meetings, rows collapse into `<details>` sections by `YYYY-MM`. Most-recent month is open by default; subdirs with ≤10 meetings stay flat.
+- **Cross-meeting search** — header search box on every page. Hits the SQLite FTS5 index (tokenizer: `unicode61 remove_diacritics 2`, handles Spanish). Results list deep-links to the right meeting + subtab. The index is built on startup (if empty) and updated on every mutation (ingest categorize, meeting reextract / reclassify, inbox apply).
+
+New modules:
+
+- `app/config_store.py` — `ui.json` load/save/get.
+- `app/folder_picker.py` — tkinter dialog in a worker thread; graceful None when headless.
+- `app/search.py` — FTS5 reindex helpers + `search(query)` with XSS-safe snippets.
+- `app/routes/config_routes.py`, `app/routes/search_routes.py` — new pages.
+
+Configuration precedence: `ui.json:watch_dir` wins over `WATCH_DIR` env var. `.env` still holds the API keys.
+

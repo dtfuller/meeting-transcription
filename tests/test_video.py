@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app import fs
+from app import fs, store
 from server import create_app
 from tests.helpers.sample_assets import build_sample_tree
 
@@ -11,6 +11,7 @@ def client(tmp_path, monkeypatch):
     build_sample_tree(tmp_path)
     monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
     monkeypatch.setattr(fs, "KNOWN_NAMES_TO_CLASSIFY", tmp_path / "known-names" / "to-classify")
+    monkeypatch.setattr(store, "DB_PATH", tmp_path / "ui.db")
     return TestClient(create_app())
 
 

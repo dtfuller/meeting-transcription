@@ -27,3 +27,4 @@ tmp/
 # Web UI SQLite DB
 ui.db
 ui.db-journal
+ui.json

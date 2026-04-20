@@ -9,17 +9,13 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app import fs, ingest, store, watcher as watcher_mod
+from app import fs, ingest, search, store, watcher as watcher_mod
 from app.routes._context import nav_counts
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / "templates"))
 
 ROOT = Path(__file__).parent.parent.parent
-
-# Shared watcher instance used by the lifecycle endpoints. server.py's startup
-# hook also installs one; when that is present, /watcher/start is a no-op.
-_shared_watcher: watcher_mod.Watcher | None = None
 
 
 def _existing_subdirs() -> list[str]:
@@ -84,6 +80,10 @@ def inbox_apply(
     store.set_meeting_tags(stem, tags, source="auto" if proposal.proposed_subdir else "manual")
 
     store.delete_proposal(stem)
+    try:
+        search.reindex_meeting(stem)
+    except Exception:
+        pass  # best-effort; files have already moved
     return RedirectResponse(f"/meetings/{target_subdir}/{stem}", status_code=303)
 
 
@@ -97,28 +97,23 @@ def inbox_dismiss(stem: str):
 
 @router.post("/watcher/start")
 def watcher_start():
-    global _shared_watcher
     watch_dir = os.getenv("WATCH_DIR")
     if not watch_dir:
         raise HTTPException(status_code=400, detail="WATCH_DIR not set in environment")
-    if _shared_watcher is None:
-        _shared_watcher = watcher_mod.Watcher()
-    if not _shared_watcher.is_running():
-        _shared_watcher.start(Path(watch_dir), ingest.get_coordinator().on_new_file)
-    return JSONResponse(_shared_watcher.status())
+    w = watcher_mod.get_shared()
+    if not w.is_running():
+        w.start(Path(watch_dir), ingest.get_coordinator().on_new_file)
+    return JSONResponse(w.status())
 
 
 @router.post("/watcher/stop")
 def watcher_stop():
-    global _shared_watcher
-    if _shared_watcher is not None and _shared_watcher.is_running():
-        _shared_watcher.stop()
+    w = watcher_mod.get_shared()
+    if w.is_running():
+        w.stop()
     return JSONResponse({"is_running": False, "watch_dir": None})
 
 
 @router.get("/watcher/status")
 def watcher_status():
-    global _shared_watcher
-    if _shared_watcher is None:
-        return JSONResponse({"is_running": False, "watch_dir": None})
-    return JSONResponse(_shared_watcher.status())
+    return JSONResponse(watcher_mod.get_shared().status())

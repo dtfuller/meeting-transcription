@@ -10,12 +10,14 @@ from tests.helpers.sample_assets import build_sample_tree
 
 @pytest.fixture
 def app_with_tree(tmp_path, monkeypatch):
+    from app import store
     build_sample_tree(tmp_path)
     monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
     monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
     monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
     monkeypatch.setattr(fs, "KNOWN_NAMES_TO_USE", tmp_path / "known-names" / "to-use")
     monkeypatch.setattr(fs, "KNOWN_NAMES_TO_CLASSIFY", tmp_path / "known-names" / "to-classify")
+    monkeypatch.setattr(store, "DB_PATH", tmp_path / "ui.db")
     return TestClient(create_app())
 
 
@@ -82,12 +84,14 @@ HELPER = Path(__file__).parent / "helpers" / "fake_pipeline.py"
 
 
 def test_post_reextract_starts_runner(app_with_tree, monkeypatch):
-    from app import pipeline
+    from app import pipeline, search
     pipeline.get_runner().reset_for_tests()
     monkeypatch.setattr(
         "app.routes.meetings.build_reextract_argv",
         lambda m: [sys.executable, str(HELPER)],
     )
+    reindexed: list[str] = []
+    monkeypatch.setattr(search, "reindex_meeting", lambda stem: reindexed.append(stem))
     r = app_with_tree.post(
         "/meetings/multiturbo/2026-04-14 17-00-43/reextract",
         follow_redirects=False,
@@ -97,6 +101,11 @@ def test_post_reextract_starts_runner(app_with_tree, monkeypatch):
     for _ in range(200):
         if not pipeline.get_runner().is_running(): break
         time.sleep(0.05)
+    # Allow on_complete to fire after the pump thread exits
+    for _ in range(20):
+        if reindexed: break
+        time.sleep(0.05)
+    assert "2026-04-14 17-00-43" in reindexed
 
 
 def test_post_reclassify_one_starts_runner(app_with_tree, monkeypatch):
@@ -163,6 +172,42 @@ def test_last_meeting_has_no_next_link(app_with_tree):
     r = app_with_tree.get("/meetings/multiturbo/2026-04-16 17-01-16")
     assert r.status_code == 200
     assert '<span class="mini-btn disabled">Next →' in r.text
+
+
+def test_tree_renders_flat_for_small_subdir(app_with_tree):
+    # Sample tree has 2 meetings in multiturbo, 1 in check-in — all below threshold.
+    r = app_with_tree.get("/meetings")
+    assert r.status_code == 200
+    # No <details> element because nothing is grouped.
+    assert "<details" not in r.text
+
+
+def test_tree_renders_details_groups_when_subdir_exceeds_threshold(tmp_path, monkeypatch):
+    # Build a fresh tree with 11 meetings in one subdir spanning two months.
+    from app import fs, store
+    from server import create_app
+    monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
+    monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
+    monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
+    monkeypatch.setattr(fs, "KNOWN_NAMES_TO_USE", tmp_path / "known-names" / "to-use")
+    monkeypatch.setattr(fs, "KNOWN_NAMES_TO_CLASSIFY", tmp_path / "known-names" / "to-classify")
+    monkeypatch.setattr(store, "DB_PATH", tmp_path / "ui.db")
+    store.init_schema()
+    # 5 in April, 6 in May → 11 total, above the default threshold of 10
+    for day in range(1, 6):
+        p = tmp_path / "data" / "big" / f"2026-04-{day:02d} 10-00-00.mov"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(b"\x00" * 16)
+    for day in range(1, 7):
+        p = tmp_path / "data" / "big" / f"2026-05-{day:02d} 10-00-00.mov"
+        p.write_bytes(b"\x00" * 16)
+
+    client = TestClient(create_app())
+    r = client.get("/meetings")
+    assert r.status_code == 200
+    assert '<details class="month-group" open>' in r.text  # most-recent May open
+    assert "2026-05" in r.text
+    assert "2026-04" in r.text
 
 
 def test_meeting_detail_defaults_to_knowledge_subtab(app_with_tree):

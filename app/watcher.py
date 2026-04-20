@@ -70,6 +70,19 @@ class Watcher:
         self._timer_thread = threading.Thread(target=self._stability_loop, daemon=True)
         self._timer_thread.start()
 
+    def reconfigure(self, new_watch_dir: Path) -> None:
+        """Stop (if running) and restart pointed at a new directory.
+
+        No-op if not currently running. Preserves the callback registered
+        by the prior start() call.
+        """
+        if not self.is_running():
+            return
+        callback = self._callback
+        self.stop()
+        if callback is not None:
+            self.start(new_watch_dir, callback)
+
     def stop(self) -> None:
         self._stop_event.set()
         if self._observer is not None:
@@ -113,3 +126,14 @@ class Watcher:
                         self._callback(p)
                 except Exception:
                     pass
+
+
+_shared: Watcher | None = None
+
+
+def get_shared() -> Watcher:
+    """Module-level Watcher singleton used by both inbox and config routes."""
+    global _shared
+    if _shared is None:
+        _shared = Watcher()
+    return _shared

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Config — Transcribe{% endblock %}
+{% block content %}
+<section class="config-page">
+  <h2>Settings</h2>
+  <form method="post" action="/config" class="config-form">
+    <label>
+      <span class="label-text">Watch directory (new recordings land here)</span>
+      <div class="watch-dir-row">
+        <input id="watch-dir-input" name="watch_dir" value="{{ watch_dir }}" autocomplete="off" placeholder="/Users/you/Movies/Meetings">
+        <button type="button" class="mini-btn" onclick="browsePath()">Browse…</button>
+      </div>
+    </label>
+    <button type="submit" class="primary-btn">Save</button>
+  </form>
+</section>
+<script>
+  async function browsePath() {
+    const r = await fetch('/config/browse', { method: 'POST' });
+    const data = await r.json();
+    if (data.path) {
+      document.getElementById('watch-dir-input').value = data.path;
+    }
+  }
+</script>
+{% endblock %}

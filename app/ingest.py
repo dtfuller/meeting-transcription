@@ -6,7 +6,7 @@ import threading
 from collections import deque
 from pathlib import Path
 
-from app import categorize, fs, pipeline, store
+from app import categorize, fs, pipeline, search, store
 
 ROOT = Path(__file__).parent.parent
 PROCESS_PY = ROOT / "process.py"
@@ -47,6 +47,10 @@ def _run_categorize(stem: str) -> None:
             status="ready",
             error_message=None,
         )
+        try:
+            search.reindex_meeting(stem)
+        except Exception:
+            pass  # best-effort; proposal is already saved
     except Exception as e:
         store.update_proposal_status(stem, "error", f"categorize failed: {e}")
 

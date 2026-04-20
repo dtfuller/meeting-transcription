@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Search — Transcribe{% endblock %}
+{% block content %}
+<section class="search-page">
+  <form method="get" action="/search" class="search-form">
+    <input type="search" name="q" value="{{ query }}" autofocus placeholder="Search transcripts, knowledge, commitments…">
+    <button type="submit" class="primary-btn">Search</button>
+  </form>
+
+  {% if query %}
+    {% if hits %}
+      <p class="subtitle">{{ hits|length }} match{% if hits|length != 1 %}es{% endif %} for "{{ query }}"</p>
+      <div class="search-results">
+        {% for hit in hits %}
+          {% include "_search_hit.html" %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="subtitle">No matches for "{{ query }}".</p>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

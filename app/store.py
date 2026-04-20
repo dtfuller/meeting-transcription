@@ -54,6 +54,11 @@ def init_schema() -> None:
         );
 
         CREATE INDEX IF NOT EXISTS meeting_tags_by_tag ON meeting_tags(tag_name, tag_type);
+
+        CREATE VIRTUAL TABLE IF NOT EXISTS meetings_fts USING fts5(
+          stem, subdir, kind, body,
+          tokenize='unicode61 remove_diacritics 2'
+        );
         """)
 
 
