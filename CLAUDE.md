@@ -124,3 +124,23 @@ New modules:
 
 Configuration precedence: `ui.json:watch_dir` wins over `WATCH_DIR` env var. `.env` still holds the API keys.
 
+## Web UI (Round 4)
+
+Round 4 adds:
+
+- **Consistent `watch_dir` resolution** — `config_store.watch_dir()` centralizes precedence (ui.json → env). The `/config` prefill and `/inbox` "watcher disabled" banner both use it, so setting the path via either channel is reflected everywhere.
+- **Startup scan of `WATCH_DIR`** — any `*.mov` already sitting in the watched folder when the server starts gets ingested (unless its stem is already known under `data/`). Runs in a daemon thread so startup stays instant.
+- **Auto/light/dark theme toggle** — sun/moon/half-moon button in the header cycles the theme. Persists in `localStorage`. Pre-paint script in `<head>` applies the saved choice before first render (no flash).
+- **Live search-as-you-type** — header search input calls `GET /search/partial` via HTMX with a 250 ms debounce. Dropdown shows the top 8 hits plus a "See all" link. Clicking outside closes it. Enter still does a full-page `/search`.
+- **🏷 Suggest tags** — button on any meeting detail runs Claude's categorize proposer on the meeting's content and appends proposed rows to the Edit-tags form. You review + Save. Doesn't touch files, only tags.
+
+## Backlog
+
+Larger items waiting for their own rounds:
+
+- **Workspaces** — multiple independent `data/` trees with a switcher in nav, workspace-scoped `ui.db` + `ui.json`.
+- **Parallel jobs** — `PipelineRunner` becomes a pool; per-job SSE channels; Pipeline tab shows multiple live logs.
+- **Transcript inline editor** — edit speaker labels and text on the Transcript subtab; save back to `transcripts/<subdir>/<stem>.txt`.
+- **Commitments dashboard** — aggregate commitments across all meetings by owner / due date / status.
+- **Configurable system prompts** — in-app UI to edit the `extract.py` and `categorize.py` prompts; persist in `ui.json`.
+
