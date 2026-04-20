@@ -5,7 +5,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app import clips, fs, pagination, pipeline
+from app import clips, fs, pagination, pipeline, store
 from app.routes._context import nav_counts
 
 router = APIRouter()
@@ -78,6 +78,30 @@ def label_inline(request: Request,
         request=request,
         stem=stem,
         clips=stem_clips,
+    )
+    return HTMLResponse(html)
+
+
+@router.post("/speakers/discard", response_class=HTMLResponse)
+def discard(request: Request,
+            filename: str = Form(...),
+            source_stem: str = Form(...),
+            timestamp_text: str = Form(...),
+            page: int = Form(1)):
+    clip_path = fs.KNOWN_NAMES_TO_CLASSIFY / filename
+    if clip_path.exists():
+        clip_path.unlink()
+    store.add_dismissed_clip(source_stem, timestamp_text)
+    remaining = fs.list_unknown_clips()
+    pg = pagination.paginate(remaining, page)
+    html = templates.get_template("_queue_with_toast.html").render(
+        request=request,
+        clips=pg.items,
+        page_info=pg,
+        page_base_url="/speakers",
+        known_names=fs.list_known_names(),
+        labels_since_reset=clips.labels_since_reset(),
+        unknown_meetings_count=_unknown_meetings_count(),
     )
     return HTMLResponse(html)
 

@@ -105,6 +105,9 @@ def load_commitments(m: Meeting) -> str:
 def list_unknown_clips() -> list[Clip]:
     if not KNOWN_NAMES_TO_CLASSIFY.exists():
         return []
+    # Lazy import to avoid a package-level cycle (fs is imported by store callers).
+    from app import store
+    dismissed = store.list_dismissed_clip_keys()
     clips: list[Clip] = []
     for mov in sorted(KNOWN_NAMES_TO_CLASSIFY.glob("*.mov")):
         m = _CLIP_TS_RE.search(mov.name)
@@ -118,6 +121,8 @@ def list_unknown_clips() -> list[Clip]:
         if len(parts) != 2:
             continue
         raw_label, source_stem = parts[0], parts[1]
+        if (source_stem, timestamp_text) in dismissed:
+            continue
         clips.append(Clip(
             filename=mov.name,
             path=mov,

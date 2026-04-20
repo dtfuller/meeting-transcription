@@ -127,6 +127,13 @@ pre.transcript { white-space: pre-wrap; font-family: var(--font-mono); font-size
 .clip-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
 .clip-form button { background: var(--accent); color: white; border: none; border-radius: 6px; padding: 0.4rem 0.9rem; font-family: inherit; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: filter 120ms ease; }
 .clip-form button:hover { filter: brightness(1.08); }
+.clip-form button.clip-discard {
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border); font-weight: 500;
+}
+.clip-form button.clip-discard:hover {
+  filter: none; color: var(--warn); border-color: var(--warn);
+}
 .toast { position: sticky; bottom: 1rem; margin: 1rem auto 0; max-width: 540px; background: var(--panel); border: 1px solid var(--accent); border-radius: 12px; padding: 0.85rem 1.1rem; display: flex; gap: 0.75rem; align-items: center; box-shadow: var(--shadow-md); }
 .toast button { background: var(--accent); color: white; border: none; padding: 0.45rem 0.9rem; border-radius: 6px; font-family: inherit; font-weight: 600; cursor: pointer; }
 .pipeline-page { display: flex; flex-direction: column; gap: 0.9rem; }

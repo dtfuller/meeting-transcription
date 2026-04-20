@@ -112,6 +112,49 @@ def test_reclassify_resets_labels_counter_on_success(client, monkeypatch):
     assert clips.labels_since_reset() == 0
 
 
+def test_post_discard_removes_clip_and_persists_blocklist(client, tmp_path):
+    from app import store
+    # Precondition: clip exists on disk and in the queue.
+    clip_path = tmp_path / "known-names" / "to-classify" / \
+        "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov"
+    assert clip_path.exists()
+
+    r = client.post(
+        "/speakers/discard",
+        data={
+            "filename": "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov",
+            "source_stem": "2026-04-16 17-01-16",
+            "timestamp_text": "01m08s",
+        },
+    )
+    assert r.status_code == 200
+    # File removed from disk
+    assert not clip_path.exists()
+    # Blocklist row inserted
+    assert ("2026-04-16 17-01-16", "01m08s") in store.list_dismissed_clip_keys()
+    # The queue fragment no longer lists the discarded clip
+    assert "01m08s" not in r.text
+
+
+def test_discarded_clip_stays_hidden_even_if_file_reappears(client, tmp_path):
+    from app import fs, store
+    # First discard the clip
+    filename = "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov"
+    client.post(
+        "/speakers/discard",
+        data={
+            "filename": filename,
+            "source_stem": "2026-04-16 17-01-16",
+            "timestamp_text": "01m08s",
+        },
+    )
+    # Simulate --reclassify regenerating the same clip
+    (tmp_path / "known-names" / "to-classify" / filename).write_bytes(b"\x00" * 16)
+    # list_unknown_clips filters it out
+    names = [c.filename for c in fs.list_unknown_clips()]
+    assert filename not in names
+
+
 def test_label_inline_returns_updated_stem_fragment(client, tmp_path):
     # Fixture has two clips for stem "2026-04-16 17-01-16"
     r = client.post(
