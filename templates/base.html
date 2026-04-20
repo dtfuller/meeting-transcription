@@ -85,6 +85,26 @@
   <script>
     (function () {
       document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.tree-toggle-all');
+        if (!btn) return;
+        e.preventDefault();
+        const tree = btn.closest('.tree');
+        if (!tree) return;
+        const details = tree.querySelectorAll('details.folder-group, details.month-group');
+        const anyOpen = Array.from(details).some(function (d) { return d.hasAttribute('open'); });
+        if (anyOpen) {
+          details.forEach(function (d) { d.removeAttribute('open'); });
+          btn.textContent = 'Expand all';
+        } else {
+          details.forEach(function (d) { d.setAttribute('open', ''); });
+          btn.textContent = 'Collapse all';
+        }
+      });
+    })();
+  </script>
+  <script>
+    (function () {
+      document.addEventListener('click', function (e) {
         const btn = e.target.closest('.more-toggle');
         if (!btn) return;
         e.preventDefault();

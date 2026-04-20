@@ -1,4 +1,7 @@
 <aside class="tree">
+  <div class="tree-header">
+    <button type="button" class="tree-toggle-all" aria-label="Collapse or expand all folders">Collapse all</button>
+  </div>
   {% for block in meeting_blocks %}
     <details class="folder-group" open>
       <summary class="folder">📁 {{ block.subdir }}</summary>
