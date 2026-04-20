@@ -1,5 +1,3 @@
-import html as html_escape
-import re
 import sys
 from pathlib import Path
 from typing import Annotated
@@ -38,13 +36,6 @@ def build_reextract_argv(m: fs.Meeting) -> list[str]:
 def build_reclassify_argv(m: fs.Meeting) -> list[str]:
     data_root = fs.DATA_DIR.parent
     return [sys.executable, str(PROCESS_PY), str(m.mov_path.relative_to(data_root)), "--reclassify"]
-
-_UNK_RE = re.compile(r"(Unknown Speaker \d+)")
-
-
-def _render_transcript(text: str) -> str:
-    escaped = html_escape.escape(text)
-    return _UNK_RE.sub(r'<span class="unk">\1</span>', escaped)
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / "templates"))
@@ -104,7 +95,7 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowle
             "view": view,
             "prev_meeting": prev_meeting,
             "next_meeting": next_meeting,
-            "transcript_html": _render_transcript(fs.load_transcript(m)),
+            "transcript_html": md_render.render_transcript(fs.load_transcript(m)),
             "knowledge_html": md_render.render(fs.load_knowledge(m)),
             "commitments_html": md_render.render(fs.load_commitments(m)),
             "tags_by_stem": tags_by_stem,
