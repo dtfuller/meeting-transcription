@@ -10,12 +10,14 @@ from tests.helpers.sample_assets import build_sample_tree
 
 @pytest.fixture
 def app_with_tree(tmp_path, monkeypatch):
+    from app import store
     build_sample_tree(tmp_path)
     monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
     monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
     monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
     monkeypatch.setattr(fs, "KNOWN_NAMES_TO_USE", tmp_path / "known-names" / "to-use")
     monkeypatch.setattr(fs, "KNOWN_NAMES_TO_CLASSIFY", tmp_path / "known-names" / "to-classify")
+    monkeypatch.setattr(store, "DB_PATH", tmp_path / "ui.db")
     return TestClient(create_app())
 
 
