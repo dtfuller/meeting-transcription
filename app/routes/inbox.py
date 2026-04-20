@@ -10,7 +10,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app import config_store, fs, ingest, markdown as md_render, search, store, watcher as watcher_mod
+from app import config_store, fs, ingest, markdown as md_render, pagination, search, store, watcher as watcher_mod
 from app.routes._context import nav_counts
 
 router = APIRouter()
@@ -51,14 +51,17 @@ def _inbox_items() -> list[InboxItem]:
 
 
 @router.get("/inbox")
-def inbox_index(request: Request):
-    items = _inbox_items()
+def inbox_index(request: Request, page: int = 1):
+    all_items = _inbox_items()
+    pg = pagination.paginate(all_items, page)
     return templates.TemplateResponse(
         request,
         "inbox.html",
         {
             "active_tab": "inbox",
-            "items": items,
+            "items": pg.items,
+            "page_info": pg,
+            "page_base_url": "/inbox",
             "existing_subdirs": _existing_subdirs(),
             "watcher_enabled": bool(config_store.watch_dir()),
             **nav_counts(),

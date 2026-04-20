@@ -154,3 +154,18 @@ def test_inbox_card_preview_shows_waiting_when_not_ready(client):
     assert r.status_code == 200
     assert "still-cooking" in r.text
     assert "Waiting for pipeline to finish…" in r.text
+
+
+def test_inbox_paginates_when_over_page_size(client):
+    for i in range(25):
+        _seed_proposal(f"bulk-{i:02d}", "multiturbo", [])
+    # Default page=1 should show the first 20, not all 25
+    r1 = client.get("/inbox")
+    assert r1.status_code == 200
+    assert r1.text.count('class="inbox-card"') == 20
+    assert "Page 1 of 2" in r1.text
+
+    r2 = client.get("/inbox?page=2")
+    assert r2.status_code == 200
+    assert r2.text.count('class="inbox-card"') == 5
+    assert "Page 2 of 2" in r2.text

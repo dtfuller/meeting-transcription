@@ -10,6 +10,7 @@
         hx-target="closest .speakers-page"
         hx-swap="innerHTML">
     <input type="hidden" name="filename" value="{{ clip.filename }}">
+    <input type="hidden" name="page" value="{{ page_info.page if page_info else 1 }}">
     <input name="name" list="known-names" placeholder="Who is this?" autocomplete="off" required>
     <button type="submit">Save</button>
   </form>

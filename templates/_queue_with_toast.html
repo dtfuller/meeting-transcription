@@ -1,8 +1,10 @@
 <div class="speakers-queue">
   {% if clips %}
+    {% include "_pagination.html" %}
     {% for clip in clips %}
       {% include "_clip_card.html" %}
     {% endfor %}
+    {% include "_pagination.html" %}
   {% else %}
     <p class="subtitle">No clips awaiting labels. You're all caught up.</p>
   {% endif %}

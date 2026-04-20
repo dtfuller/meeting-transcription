@@ -9,10 +9,12 @@
   {% endif %}
 
   {% if items %}
+    {% include "_pagination.html" %}
     {% for item in items %}
       {% set proposal = item.proposal %}
       {% include "_inbox_card.html" %}
     {% endfor %}
+    {% include "_pagination.html" %}
   {% else %}
     <p class="subtitle">Inbox is empty. New recordings in <code>WATCH_DIR</code> will land here.</p>
   {% endif %}

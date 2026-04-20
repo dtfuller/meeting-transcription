@@ -5,7 +5,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app import clips, fs, pipeline
+from app import clips, fs, pagination, pipeline
 from app.routes._context import nav_counts
 
 router = APIRouter()
@@ -24,14 +24,17 @@ def _unknown_meetings_count() -> int:
 
 
 @router.get("/speakers")
-def speakers_index(request: Request):
+def speakers_index(request: Request, page: int = 1):
     unknown_clips = fs.list_unknown_clips()
+    pg = pagination.paginate(unknown_clips, page)
     return templates.TemplateResponse(
         request,
         "speakers.html",
         {
             "active_tab": "speakers",
-            "clips": unknown_clips,
+            "clips": pg.items,
+            "page_info": pg,
+            "page_base_url": "/speakers",
             "known_names": fs.list_known_names(),
             "labels_since_reset": clips.labels_since_reset(),
             "unknown_meetings_count": _unknown_meetings_count(),
@@ -41,12 +44,16 @@ def speakers_index(request: Request):
 
 
 @router.post("/speakers/label", response_class=HTMLResponse)
-def label(request: Request, filename: str = Form(...), name: str = Form(...)):
+def label(request: Request, filename: str = Form(...), name: str = Form(...),
+          page: int = Form(1)):
     clips.label_clip(filename, name)
     remaining = fs.list_unknown_clips()
+    pg = pagination.paginate(remaining, page)
     html = templates.get_template("_queue_with_toast.html").render(
         request=request,
-        clips=remaining,
+        clips=pg.items,
+        page_info=pg,
+        page_base_url="/speakers",
         known_names=fs.list_known_names(),
         labels_since_reset=clips.labels_since_reset(),
         unknown_meetings_count=_unknown_meetings_count(),
