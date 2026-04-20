@@ -26,6 +26,7 @@ class InboxItem:
     knowledge_html: str
     commitments_html: str
     has_video: bool
+    unknown_clips: list  # list[fs.Clip] for this meeting's unknown speakers
 
 
 def _existing_subdirs() -> list[str]:
@@ -34,11 +35,16 @@ def _existing_subdirs() -> list[str]:
 
 
 def _inbox_items() -> list[InboxItem]:
+    # Group clips by source_stem once so each proposal lookup is O(1).
+    clips_by_stem: dict[str, list] = {}
+    for c in fs.list_unknown_clips():
+        clips_by_stem.setdefault(c.source_stem, []).append(c)
+
     items: list[InboxItem] = []
     for p in store.list_pending_proposals():
         m = fs.find_meeting(store.INBOX_SUBDIR, p.stem)
         if m is None:
-            items.append(InboxItem(p, "", "", "", False))
+            items.append(InboxItem(p, "", "", "", False, clips_by_stem.get(p.stem, [])))
             continue
         items.append(InboxItem(
             proposal=p,
@@ -46,6 +52,7 @@ def _inbox_items() -> list[InboxItem]:
             knowledge_html=md_render.render(fs.load_knowledge(m)),
             commitments_html=md_render.render(fs.load_commitments(m)),
             has_video=m.mov_path.exists(),
+            unknown_clips=clips_by_stem.get(p.stem, []),
         ))
     return items
 

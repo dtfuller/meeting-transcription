@@ -41,6 +41,14 @@
       <span class="subtitle">no tags</span>
     {% endif %}
   </div>
+  {% if unknown_clips %}
+  <details class="preview-section" open>
+    <summary>👤 Unknown Speakers <span class="status status-transcribing">{{ unknown_clips|length }}</span></summary>
+    {% set stem = meeting.stem %}
+    {% set clips = unknown_clips %}
+    {% include "_unknown_speakers_inline.html" %}
+  </details>
+  {% endif %}
   <details class="tag-edit">
     <summary>Edit tags</summary>
     <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/tags">

@@ -83,6 +83,7 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowle
     prev_meeting = meetings[idx - 1] if idx is not None and idx > 0 else None
     next_meeting = meetings[idx + 1] if idx is not None and idx < len(meetings) - 1 else None
     meeting_blocks = fs.group_meetings(meetings)
+    unknown_clips = [c for c in fs.list_unknown_clips() if c.source_stem == stem]
     return templates.TemplateResponse(
         request,
         "meetings.html",
@@ -100,6 +101,7 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowle
             "commitments_html": md_render.render(fs.load_commitments(m)),
             "tags_by_stem": tags_by_stem,
             "meeting_tags": store.list_meeting_tags(stem),
+            "unknown_clips": unknown_clips,
             "current_tag_filter": None,
             **nav_counts(),
         },

@@ -61,6 +61,27 @@ def label(request: Request, filename: str = Form(...), name: str = Form(...),
     return HTMLResponse(html)
 
 
+@router.post("/speakers/label-inline", response_class=HTMLResponse)
+def label_inline(request: Request,
+                 filename: str = Form(...),
+                 name: str = Form(...),
+                 stem: str = Form(...)):
+    """Label a clip and return ONLY the updated per-meeting speaker list.
+
+    Used by the inline editor on /inbox cards and the /meetings detail
+    page, where we want a scoped HTMX swap rather than re-rendering the
+    entire global Speakers queue.
+    """
+    clips.label_clip(filename, name)
+    stem_clips = [c for c in fs.list_unknown_clips() if c.source_stem == stem]
+    html = templates.get_template("_unknown_speakers_inline.html").render(
+        request=request,
+        stem=stem,
+        clips=stem_clips,
+    )
+    return HTMLResponse(html)
+
+
 def _reset_counter_on_reclassify_success(argv_: list[str], rc: int) -> None:
     if rc == 0 and "--reclassify" in argv_:
         clips.reset_counter()

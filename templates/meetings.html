@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Meetings — Transcribe{% endblock %}
 {% block content %}
+<datalist id="known-names">
+  {% for n in known_names_all %}<option value="{{ n }}">{% endfor %}
+</datalist>
 <section class="meetings-page">
   {% include "_meeting_tree.html" %}
   {% if meeting %}

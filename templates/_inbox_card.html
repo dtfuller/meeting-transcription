@@ -65,4 +65,11 @@
       <p class="subtitle">Video unavailable.</p>
     {% endif %}
   </details>
+  <details class="preview-section"
+           {% if item.unknown_clips %}open{% endif %}>
+    <summary>👤 Unknown Speakers{% if item.unknown_clips %} <span class="status status-transcribing">{{ item.unknown_clips|length }}</span>{% endif %}</summary>
+    {% set stem = proposal.stem %}
+    {% set clips = item.unknown_clips %}
+    {% include "_unknown_speakers_inline.html" %}
+  </details>
 </article>

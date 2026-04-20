@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Inbox — Transcribe{% endblock %}
 {% block content %}
+<datalist id="known-names">
+  {% for n in known_names_all %}<option value="{{ n }}">{% endfor %}
+</datalist>
 <section class="inbox-page">
   {% if not watcher_enabled %}
   <div class="banner">

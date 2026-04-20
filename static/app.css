@@ -154,3 +154,11 @@ pre.log { background: #0a0a0a; color: #9df; padding: 0.75rem 1rem; border-radius
 .filter-pill { text-decoration: none; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.8rem; }
 .filter-pill:hover { color: var(--accent); border-color: var(--accent); }
 .filter-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+.unknown-speakers-inline { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.3rem 0 0.2rem 1.1rem; }
+.speaker-inline-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.6rem; display: grid; grid-template-columns: 260px 1fr; gap: 0.6rem; align-items: center; }
+.speaker-inline-video { width: 260px; border-radius: 6px; background: black; }
+.speaker-inline-form { display: flex; flex-direction: column; gap: 0.3rem; }
+.speaker-inline-meta { font-size: 0.75rem; color: var(--muted); display: flex; gap: 0.5rem; }
+.speaker-inline-label { color: var(--warn); font-weight: 600; }
+.speaker-inline-form input[name="name"] { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.85rem; }
+.speaker-inline-form button { background: var(--accent); color: white; border: none; border-radius: 6px; padding: 0.3rem 0.6rem; font-weight: 600; font-size: 0.8rem; cursor: pointer; justify-self: start; }

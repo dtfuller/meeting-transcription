@@ -110,3 +110,25 @@ def test_reclassify_resets_labels_counter_on_success(client, monkeypatch):
         time.sleep(0.05)
     assert pipeline.get_runner().last_return_code == 0
     assert clips.labels_since_reset() == 0
+
+
+def test_label_inline_returns_updated_stem_fragment(client, tmp_path):
+    # Fixture has two clips for stem "2026-04-16 17-01-16"
+    r = client.post(
+        "/speakers/label-inline",
+        data={
+            "filename": "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov",
+            "name": "Alejandra Gomez",
+            "stem": "2026-04-16 17-01-16",
+        },
+    )
+    assert r.status_code == 200
+    # The other clip for this stem is still there
+    assert "Unknown Speaker 2" in r.text
+    # The one we labeled is gone
+    assert "Unknown Speaker 1" not in r.text
+    # Fragment is wrapped in the expected outerHTML target container
+    assert 'id="unknown-speakers-' in r.text
+    # File was moved
+    assert (tmp_path / "known-names" / "to-use" /
+            "Alejandra Gomez - 2026-04-16 17-01-16 - 01m08s.mov").exists()
