@@ -169,3 +169,30 @@ def test_inbox_paginates_when_over_page_size(client):
     assert r2.status_code == 200
     assert r2.text.count('class="inbox-card"') == 5
     assert "Page 2 of 2" in r2.text
+
+
+def test_inbox_ready_only_filter_hides_incomplete_proposals(client):
+    # Full proposal (all 3 content files via _seed_proposal)
+    _seed_proposal("complete-one", "multiturbo", [])
+    # "Ready" status but no on-disk files — the exact case from the screenshot
+    store.save_proposal(
+        stem="ready-but-empty",
+        proposed_subdir="info-general",
+        proposed_tags=[],
+        status="ready",
+        error_message=None,
+    )
+
+    # All filter (default)
+    r_all = client.get("/inbox")
+    assert "complete-one" in r_all.text
+    assert "ready-but-empty" in r_all.text
+    assert "All (2)" in r_all.text
+    assert "Finished (1)" in r_all.text
+
+    # Ready-only filter
+    r_ready = client.get("/inbox?ready_only=1")
+    assert "complete-one" in r_ready.text
+    assert "ready-but-empty" not in r_ready.text
+    # Filter pill reflects state
+    assert 'class="filter-pill active" href="/inbox?ready_only=1"' in r_ready.text

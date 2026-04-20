@@ -150,3 +150,7 @@ pre.log { background: #0a0a0a; color: #9df; padding: 0.75rem 1rem; border-radius
 .preview-video { max-width: 480px; width: 100%; margin: 0.3rem 0 0.2rem 1.1rem; border-radius: 6px; background: black; }
 .pagination { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin: 0.5rem 0; }
 .pagination-info { font-size: 0.8rem; color: var(--muted); }
+.inbox-filter { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; }
+.filter-pill { text-decoration: none; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.8rem; }
+.filter-pill:hover { color: var(--accent); border-color: var(--accent); }
+.filter-pill.active { background: var(--accent); color: white; border-color: var(--accent); }

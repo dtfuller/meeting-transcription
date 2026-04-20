@@ -50,10 +50,22 @@ def _inbox_items() -> list[InboxItem]:
     return items
 
 
+def _is_finished(item: InboxItem) -> bool:
+    """A proposal's pipeline is "finished" only when all three content
+    files exist. Status == 'ready' alone isn't enough — a safety-net
+    promotion can leave a 'ready' row with no on-disk content."""
+    return bool(item.transcript_html and item.knowledge_html and item.commitments_html)
+
+
 @router.get("/inbox")
-def inbox_index(request: Request, page: int = 1):
+def inbox_index(request: Request, page: int = 1, ready_only: int = 0):
     all_items = _inbox_items()
-    pg = pagination.paginate(all_items, page)
+    finished_count = sum(1 for i in all_items if _is_finished(i))
+    if ready_only:
+        filtered = [i for i in all_items if _is_finished(i)]
+    else:
+        filtered = all_items
+    pg = pagination.paginate(filtered, page)
     return templates.TemplateResponse(
         request,
         "inbox.html",
@@ -62,6 +74,10 @@ def inbox_index(request: Request, page: int = 1):
             "items": pg.items,
             "page_info": pg,
             "page_base_url": "/inbox",
+            "page_params": {"ready_only": 1} if ready_only else {},
+            "ready_only": bool(ready_only),
+            "total_count": len(all_items),
+            "finished_count": finished_count,
             "existing_subdirs": _existing_subdirs(),
             "watcher_enabled": bool(config_store.watch_dir()),
             **nav_counts(),
