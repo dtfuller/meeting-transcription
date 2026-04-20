@@ -9,7 +9,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app import fs, ingest, search, store, watcher as watcher_mod
+from app import config_store, fs, ingest, search, store, watcher as watcher_mod
 from app.routes._context import nav_counts
 
 router = APIRouter()
@@ -33,7 +33,7 @@ def inbox_index(request: Request):
             "active_tab": "inbox",
             "proposals": proposals,
             "existing_subdirs": _existing_subdirs(),
-            "watcher_enabled": bool(os.getenv("WATCH_DIR")),
+            "watcher_enabled": bool(config_store.watch_dir()),
             **nav_counts(),
         },
     )

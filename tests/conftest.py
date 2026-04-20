@@ -11,17 +11,19 @@ from server import create_app  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _isolate_ui_db(tmp_path_factory, monkeypatch):
-    """Redirect store.DB_PATH to a throwaway per-test tmp file.
+def _isolate_ui_state(tmp_path_factory, monkeypatch):
+    """Redirect store.DB_PATH AND config_store.CONFIG_PATH to per-test tmp files.
 
-    Prevents any test that calls TestClient(create_app()) from writing to the
-    repo-root ui.db (which can otherwise be populated with sample-tree fixture
-    content or accidentally mutated during test runs). Tests that need a
-    specific DB location just monkeypatch again — their override wins.
+    Prevents any test that calls TestClient(create_app()) or config_store.save()
+    from writing to the repo-root ui.db / ui.json (which can otherwise be
+    populated with sample-tree fixture content or accidentally mutated during
+    test runs). Tests that need a specific location just monkeypatch again —
+    their override wins.
     """
-    from app import store
-    tmp = tmp_path_factory.mktemp("default_ui_db")
+    from app import config_store, store
+    tmp = tmp_path_factory.mktemp("default_ui_state")
     monkeypatch.setattr(store, "DB_PATH", tmp / "ui.db")
+    monkeypatch.setattr(config_store, "CONFIG_PATH", tmp / "ui.json")
     yield
 
 

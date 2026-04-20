@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import uvicorn
@@ -16,11 +15,7 @@ load_dotenv()
 
 def resolve_watch_dir() -> str | None:
     """ui.json takes precedence; fall back to the WATCH_DIR env var."""
-    from_config = config_store.get("watch_dir")
-    if from_config:
-        return from_config
-    from_env = os.getenv("WATCH_DIR")
-    return from_env or None
+    return config_store.watch_dir()
 
 
 def create_app() -> FastAPI:

@@ -113,3 +113,13 @@ def test_watcher_status_endpoints(client):
     r = client.get("/watcher/status")
     assert r.status_code == 200
     assert r.json()["is_running"] in (True, False)
+
+
+def test_inbox_watcher_enabled_when_only_config_set(client, monkeypatch):
+    from app import config_store
+    monkeypatch.delenv("WATCH_DIR", raising=False)
+    config_store.save({"watch_dir": "/some/path"})
+    r = client.get("/inbox")
+    assert r.status_code == 200
+    # Watcher-disabled banner must NOT appear
+    assert "Watcher disabled" not in r.text

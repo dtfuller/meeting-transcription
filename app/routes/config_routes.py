@@ -20,7 +20,7 @@ def config_index(request: Request):
         "config.html",
         {
             "active_tab": None,
-            "watch_dir": config_store.get("watch_dir", ""),
+            "watch_dir": config_store.watch_dir() or "",
             **nav_counts(),
         },
     )
