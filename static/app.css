@@ -22,8 +22,9 @@
   --selected-bg: rgba(10, 132, 255, 0.15);
   --selected-border: #0a84ff;
 }
-.theme-toggle { background: transparent; border: none; color: var(--muted); font-size: 1.1rem; padding: 0.2rem 0.4rem; cursor: pointer; }
-.theme-toggle:hover { color: var(--accent); }
+.app-right { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+.theme-toggle { background: var(--bg); color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 0.2rem 0.45rem; font-family: inherit; font-size: 0.8rem; cursor: pointer; }
+.theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
 .app-bar { display: flex; align-items: center; gap: 1.5rem; padding: 0.6rem 1.25rem; background: var(--panel); border-bottom: 1px solid var(--border); }

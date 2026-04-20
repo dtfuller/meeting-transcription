@@ -46,27 +46,26 @@
         {% if pipeline_running %}<span class="running">running</span>{% endif %}
       </a>
     </nav>
-    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">◐</button>
-    <a href="/config" class="gear" aria-label="Settings" title="Settings">⚙</a>
+    <div class="app-right">
+      <select class="theme-toggle" id="theme-toggle" aria-label="Theme" title="Theme">
+        <option value="auto">◐ Auto</option>
+        <option value="light">☀ Light</option>
+        <option value="dark">☾ Dark</option>
+      </select>
+      <a href="/config" class="gear" aria-label="Settings" title="Settings">⚙</a>
+    </div>
   </header>
   <main class="app-main">
     {% block content %}{% endblock %}
   </main>
   <script>
     (function () {
-      const btn = document.getElementById('theme-toggle');
-      if (!btn) return;
-      const glyphs = { auto: '◐', light: '☀', dark: '☾' };
-      const cycle = { auto: 'light', light: 'dark', dark: 'auto' };
-      function paint() {
-        btn.textContent = glyphs[document.documentElement.dataset.theme] || '◐';
-      }
-      paint();
-      btn.addEventListener('click', function () {
-        const next = cycle[document.documentElement.dataset.theme] || 'light';
-        document.documentElement.dataset.theme = next;
-        localStorage.setItem('transcribe.theme', next);
-        paint();
+      const sel = document.getElementById('theme-toggle');
+      if (!sel) return;
+      sel.value = document.documentElement.dataset.theme || 'auto';
+      sel.addEventListener('change', function () {
+        document.documentElement.dataset.theme = sel.value;
+        localStorage.setItem('transcribe.theme', sel.value);
       });
     })();
   </script>
