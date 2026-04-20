@@ -128,7 +128,7 @@ def test_label_inline_returns_updated_stem_fragment(client, tmp_path):
     # The one we labeled is gone
     assert "Unknown Speaker 1" not in r.text
     # Fragment is wrapped in the expected outerHTML target container
-    assert 'id="unknown-speakers-' in r.text
+    assert 'class="unknown-speakers-inline"' in r.text
     # File was moved
     assert (tmp_path / "known-names" / "to-use" /
             "Alejandra Gomez - 2026-04-16 17-01-16 - 01m08s.mov").exists()

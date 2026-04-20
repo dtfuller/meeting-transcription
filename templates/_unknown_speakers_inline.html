@@ -1,4 +1,4 @@
-<div id="unknown-speakers-{{ stem|urlencode }}" class="unknown-speakers-inline">
+<div class="unknown-speakers-inline" data-stem="{{ stem }}">
   {% if clips %}
     {% for clip in clips %}
       <article class="speaker-inline-card">
@@ -6,7 +6,7 @@
                src="/video/clip/{{ clip.filename|urlencode }}"></video>
         <form class="speaker-inline-form"
               hx-post="/speakers/label-inline"
-              hx-target="#unknown-speakers-{{ stem|urlencode }}"
+              hx-target="closest .unknown-speakers-inline"
               hx-swap="outerHTML">
           <input type="hidden" name="filename" value="{{ clip.filename }}">
           <input type="hidden" name="stem" value="{{ stem }}">
