@@ -178,8 +178,9 @@ def test_tree_renders_flat_for_small_subdir(app_with_tree):
     # Sample tree has 2 meetings in multiturbo, 1 in check-in — all below threshold.
     r = app_with_tree.get("/meetings")
     assert r.status_code == 200
-    # No <details> element because nothing is grouped.
-    assert "<details" not in r.text
+    # No month-group details because nothing is grouped by month.
+    # (folder-group <details> always wraps each subdir.)
+    assert 'class="month-group"' not in r.text
 
 
 def test_tree_renders_details_groups_when_subdir_exceeds_threshold(tmp_path, monkeypatch):
@@ -261,7 +262,7 @@ def test_suggest_tags_button_rendered_on_detail(app_with_tree_with_tags):
     assert 'id="suggest-tags-btn"' in r.text
 
 
-def test_split_row_tags_caps_at_3_persons_and_2_others():
+def test_split_row_tags_caps_at_2_persons_and_1_other():
     from app import store
     from app.routes.meetings import _split_row_tags
     persons = [store.Tag(name=f"P{i}", type="person") for i in range(5)]
@@ -270,8 +271,8 @@ def test_split_row_tags_caps_at_3_persons_and_2_others():
     split = _split_row_tags(persons + topics + projects)
     visible_names = [t.name for t in split["visible"]]
     hidden_names = [t.name for t in split["hidden"]]
-    assert visible_names == ["P0", "P1", "P2", "T0", "T1"]
-    assert set(hidden_names) == {"P3", "P4", "T2", "J0", "J1"}
+    assert visible_names == ["P0", "P1", "T0"]
+    assert set(hidden_names) == {"P2", "P3", "P4", "T1", "T2", "J0", "J1"}
 
 
 def test_meetings_tree_caps_tags_with_overflow(tmp_path, monkeypatch):
@@ -297,16 +298,23 @@ def test_meetings_tree_caps_tags_with_overflow(tmp_path, monkeypatch):
     client = TestClient(create_app())
     r = client.get("/meetings")
     assert r.status_code == 200
-    # First 3 persons visible
-    for name in ["Person0", "Person1", "Person2"]:
+    # First 2 persons visible
+    for name in ["Person0", "Person1"]:
         assert f"\U0001f464 {name}" in r.text
-    # First 2 topics visible
-    for name in ["Topic0", "Topic1"]:
-        assert f"\U0001f3f7 {name}" in r.text
-    # Overflow toggle with correct count
-    assert ">+4 more</button>" in r.text
+    # First 1 topic visible
+    assert f"\U0001f3f7 Topic0" in r.text
+    # Overflow toggle with correct count: 5+4 - 3 visible = 6 hidden
+    assert ">+6 more</button>" in r.text
     # Remaining tags present in the page (inside hidden overflow)
-    for name in ["Person3", "Person4", "Topic2", "Topic3"]:
+    for name in ["Person2", "Person3", "Person4", "Topic1", "Topic2", "Topic3"]:
         assert name in r.text
     # Overflow marker present + hidden
     assert 'class="row-tags-overflow" hidden' in r.text
+
+
+def test_meetings_tree_wraps_subdir_in_folder_group(app_with_tree):
+    r = app_with_tree.get("/meetings")
+    assert r.status_code == 200
+    assert '<details class="folder-group" open>' in r.text
+    assert '<summary class="folder">📁 multiturbo</summary>' in r.text
+    assert '<summary class="folder">📁 check-in</summary>' in r.text

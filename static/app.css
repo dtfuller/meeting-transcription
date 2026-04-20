@@ -53,8 +53,19 @@ body { margin: 0; font-family: var(--font-sans); background: var(--bg); color: v
 .subtitle { color: var(--muted); }
 .meetings-page { display: flex; gap: 1.5rem; align-items: flex-start; }
 .tree { min-width: 240px; max-width: 300px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem 0.9rem; font-size: 0.85rem; box-shadow: var(--shadow-sm); position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
-.tree .folder { font-weight: 600; letter-spacing: -0.01em; margin: 0.6rem 0 0.25rem; font-size: 0.82rem; }
-.tree .folder:first-child { margin-top: 0; }
+.folder-group { margin: 0.6rem 0 0.25rem; }
+.folder-group:first-child { margin-top: 0; }
+.folder-group > summary.folder {
+  cursor: pointer; font-weight: 600; letter-spacing: -0.01em;
+  font-size: 0.82rem; padding: 0.1rem 0; list-style: none;
+  display: flex; align-items: center; gap: 0.3rem;
+}
+.folder-group > summary.folder::-webkit-details-marker { display: none; }
+.folder-group > summary.folder::before {
+  content: "▸"; display: inline-block; width: 0.85rem;
+  color: var(--muted); transition: transform 0.1s;
+}
+.folder-group[open] > summary.folder::before { transform: rotate(90deg); }
 .tree ul { list-style: none; padding-left: 0.3rem; margin: 0; }
 .tree li a { text-decoration: none; color: var(--text); display: inline-flex; align-items: center; padding: 0.2rem 0.4rem; border-radius: 5px; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.76rem; letter-spacing: -0.01em; transition: background 120ms ease, color 120ms ease; }
 .tree li a:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); color: var(--text); }
@@ -146,7 +157,11 @@ pre.log { background: #0c0a08; color: #d4c9a8; padding: 1rem 1.1rem; border-radi
 .month-group[open] > summary::before { transform: rotate(90deg); }
 .month-group .month-count { color: var(--muted); font-weight: normal; }
 .row-tags { display: flex; flex-wrap: wrap; gap: 0.2rem; margin: 0.1rem 0 0.3rem 0.6rem; }
-.row-tags .tag { font-size: 0.65rem; padding: 0.05rem 0.35rem; text-decoration: none; color: var(--text); }
+.row-tags .tag {
+  font-size: 0.65rem; padding: 0.05rem 0.35rem; text-decoration: none; color: var(--text);
+  max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: inline-flex; align-items: center;
+}
 .row-tags .more-toggle {
   appearance: none; background: transparent; color: var(--muted);
   border: 1px dashed var(--border); border-radius: 999px;

@@ -9,6 +9,7 @@
     <div class="row-tags">
       {% for t in split.visible %}
         <a class="tag tag-{{ t.type }}"
+           title="{{ t.name }}"
            href="/meetings?tag={{ t.name|urlencode }}&amp;tag_type={{ t.type }}"
            >{{ {"person":"👤","topic":"🏷","project":"📁"}[t.type] }} {{ t.name }}</a>
       {% endfor %}
@@ -17,6 +18,7 @@
         <span class="row-tags-overflow" hidden>
           {% for t in split.hidden %}
             <a class="tag tag-{{ t.type }}"
+               title="{{ t.name }}"
                href="/meetings?tag={{ t.name|urlencode }}&amp;tag_type={{ t.type }}"
                >{{ {"person":"👤","topic":"🏷","project":"📁"}[t.type] }} {{ t.name }}</a>
           {% endfor %}

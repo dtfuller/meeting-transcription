@@ -1,19 +1,21 @@
 <aside class="tree">
   {% for block in meeting_blocks %}
-    <div class="folder">📁 {{ block.subdir }}</div>
-    {% if block.is_grouped %}
-      {% for month in block.months %}
-        <details class="month-group"{% if month.open %} open{% endif %}>
-          <summary>📅 {{ month.label }} <span class="month-count">({{ month.meetings|length }})</span></summary>
-          <ul>
-            {% for m in month.meetings %}{% include "_meeting_row.html" %}{% endfor %}
-          </ul>
-        </details>
-      {% endfor %}
-    {% else %}
-      <ul>
-        {% for m in block.flat %}{% include "_meeting_row.html" %}{% endfor %}
-      </ul>
-    {% endif %}
+    <details class="folder-group" open>
+      <summary class="folder">📁 {{ block.subdir }}</summary>
+      {% if block.is_grouped %}
+        {% for month in block.months %}
+          <details class="month-group"{% if month.open %} open{% endif %}>
+            <summary>📅 {{ month.label }} <span class="month-count">({{ month.meetings|length }})</span></summary>
+            <ul>
+              {% for m in month.meetings %}{% include "_meeting_row.html" %}{% endfor %}
+            </ul>
+          </details>
+        {% endfor %}
+      {% else %}
+        <ul>
+          {% for m in block.flat %}{% include "_meeting_row.html" %}{% endfor %}
+        </ul>
+      {% endif %}
+    </details>
   {% endfor %}
 </aside>

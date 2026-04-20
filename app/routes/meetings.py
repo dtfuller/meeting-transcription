@@ -16,7 +16,7 @@ from app import store
 def _split_row_tags(tags: list[store.Tag]) -> dict:
     persons = [t for t in tags if t.type == "person"]
     others = [t for t in tags if t.type in ("topic", "project")]
-    visible = persons[:3] + others[:2]
+    visible = persons[:2] + others[:1]
     visible_set = {(t.type, t.name) for t in visible}
     hidden = [t for t in tags if (t.type, t.name) not in visible_set]
     return {"visible": visible, "hidden": hidden}
