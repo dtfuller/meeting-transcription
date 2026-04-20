@@ -223,3 +223,39 @@ def test_meeting_detail_defaults_to_knowledge_subtab(app_with_tree):
     assert subtab_is_active("Knowledge")
     assert not subtab_is_active("Transcript")
     assert not subtab_is_active("Commitments")
+
+
+def test_suggest_tags_returns_proposed_tags(app_with_tree_with_tags, monkeypatch):
+    import json as json_mod
+    from tests.helpers.fake_anthropic import FakeAnthropic
+    fake = FakeAnthropic(text=json_mod.dumps({
+        "subdir": "multiturbo",
+        "tags": [
+            {"name": "Darwin Henao", "type": "person"},
+            {"name": "roadmap Q2", "type": "project"},
+        ],
+    }))
+    from app import categorize
+    monkeypatch.setattr(categorize, "_build_client", lambda: fake)
+
+    r = app_with_tree_with_tags.post(
+        "/meetings/multiturbo/2026-04-14 17-00-43/suggest-tags",
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["tags"] == [
+        {"name": "Darwin Henao", "type": "person"},
+        {"name": "roadmap Q2", "type": "project"},
+    ]
+
+
+def test_suggest_tags_404_on_unknown_meeting(app_with_tree_with_tags):
+    r = app_with_tree_with_tags.post("/meetings/ghost/missing/suggest-tags")
+    assert r.status_code == 404
+
+
+def test_suggest_tags_button_rendered_on_detail(app_with_tree_with_tags):
+    r = app_with_tree_with_tags.get("/meetings/multiturbo/2026-04-14 17-00-43")
+    assert r.status_code == 200
+    assert "Suggest tags" in r.text
+    assert 'id="suggest-tags-btn"' in r.text

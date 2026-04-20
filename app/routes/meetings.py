@@ -7,6 +7,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app import categorize
 from app import fs
 from app import markdown as md_render
 from app import pipeline
@@ -160,3 +161,24 @@ def set_tags(
             tags.append(store.Tag(name=n, type=t))
     store.set_meeting_tags(stem, tags, source="manual")
     return RedirectResponse(f"/meetings/{subdir}/{stem}", status_code=303)
+
+
+@router.post("/meetings/{subdir}/{stem}/suggest-tags")
+def suggest_tags(subdir: str, stem: str):
+    m = fs.find_meeting(subdir, stem)
+    if m is None:
+        raise HTTPException(status_code=404)
+    existing_subdirs = sorted(
+        {mm.subdir for mm in fs.list_meetings() if mm.subdir and mm.subdir != store.INBOX_SUBDIR}
+    )
+    try:
+        proposal = categorize.propose(
+            transcript=fs.load_transcript(m),
+            knowledge=fs.load_knowledge(m),
+            commitments=fs.load_commitments(m),
+            existing_subdirs=existing_subdirs,
+            known_names=fs.list_known_names(),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"categorize failed: {e}")
+    return {"tags": [{"name": t.name, "type": t.type} for t in proposal.tags]}
