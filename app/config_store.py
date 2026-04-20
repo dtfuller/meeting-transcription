@@ -26,3 +26,13 @@ def save(settings: dict) -> None:
 
 def get(key: str, default=None):
     return load().get(key, default)
+
+
+def watch_dir() -> str | None:
+    """Single source of truth: ui.json wins, then WATCH_DIR env, else None."""
+    import os
+    from_config = get("watch_dir")
+    if from_config:
+        return from_config
+    from_env = os.getenv("WATCH_DIR")
+    return from_env or None
