@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
@@ -9,7 +10,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app import config_store, fs, ingest, search, store, watcher as watcher_mod
+from app import config_store, fs, ingest, markdown as md_render, search, store, watcher as watcher_mod
 from app.routes._context import nav_counts
 
 router = APIRouter()
@@ -18,20 +19,46 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / 
 ROOT = Path(__file__).parent.parent.parent
 
 
+@dataclass(frozen=True)
+class InboxItem:
+    proposal: store.Proposal
+    transcript_html: str
+    knowledge_html: str
+    commitments_html: str
+    has_video: bool
+
+
 def _existing_subdirs() -> list[str]:
     return sorted({m.subdir for m in fs.list_meetings()
                    if m.subdir and m.subdir != store.INBOX_SUBDIR})
 
 
+def _inbox_items() -> list[InboxItem]:
+    items: list[InboxItem] = []
+    for p in store.list_pending_proposals():
+        m = fs.find_meeting(store.INBOX_SUBDIR, p.stem)
+        if m is None:
+            items.append(InboxItem(p, "", "", "", False))
+            continue
+        items.append(InboxItem(
+            proposal=p,
+            transcript_html=md_render.render_transcript(fs.load_transcript(m)),
+            knowledge_html=md_render.render(fs.load_knowledge(m)),
+            commitments_html=md_render.render(fs.load_commitments(m)),
+            has_video=m.mov_path.exists(),
+        ))
+    return items
+
+
 @router.get("/inbox")
 def inbox_index(request: Request):
-    proposals = store.list_pending_proposals()
+    items = _inbox_items()
     return templates.TemplateResponse(
         request,
         "inbox.html",
         {
             "active_tab": "inbox",
-            "proposals": proposals,
+            "items": items,
             "existing_subdirs": _existing_subdirs(),
             "watcher_enabled": bool(config_store.watch_dir()),
             **nav_counts(),

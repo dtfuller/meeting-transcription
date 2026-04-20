@@ -140,3 +140,11 @@ pre.log { background: #0a0a0a; color: #9df; padding: 0.75rem 1rem; border-radius
 .search-hit-subdir { color: var(--muted); }
 .search-hit-snippet { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
 .search-hit-snippet mark { background: var(--warn); color: white; border-radius: 3px; padding: 0 0.15rem; }
+.preview-section { margin-top: 0.4rem; border-top: 1px solid var(--border); padding-top: 0.4rem; }
+.preview-section > summary { cursor: pointer; font-size: 0.8rem; color: var(--muted); padding: 0.15rem 0; list-style: none; }
+.preview-section > summary::-webkit-details-marker { display: none; }
+.preview-section > summary::before { content: "▸"; display: inline-block; width: 0.9rem; transition: transform 0.1s; }
+.preview-section[open] > summary::before { transform: rotate(90deg); }
+.preview-section .md,
+.preview-section .transcript { max-height: 360px; overflow-y: auto; margin: 0.3rem 0 0.2rem 1.1rem; padding: 0.4rem 0.6rem; background: var(--bg); border-radius: 6px; }
+.preview-video { max-width: 480px; width: 100%; margin: 0.3rem 0 0.2rem 1.1rem; border-radius: 6px; background: black; }

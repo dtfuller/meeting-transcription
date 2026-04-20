@@ -8,9 +8,9 @@
   </div>
   {% endif %}
 
-  {% if proposals %}
-    {% for p in proposals %}
-      {% set proposal = p %}
+  {% if items %}
+    {% for item in items %}
+      {% set proposal = item.proposal %}
       {% include "_inbox_card.html" %}
     {% endfor %}
   {% else %}

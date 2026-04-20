@@ -123,3 +123,34 @@ def test_inbox_watcher_enabled_when_only_config_set(client, monkeypatch):
     assert r.status_code == 200
     # Watcher-disabled banner must NOT appear
     assert "Watcher disabled" not in r.text
+
+
+def test_inbox_card_renders_knowledge_commitments_transcript_video(client):
+    _seed_proposal("preview-stem", "multiturbo", [])
+    r = client.get("/inbox")
+    assert r.status_code == 200
+    assert "preview-stem" in r.text
+    # _seed_proposal writes "# K" and "# C" — markdown-it wraps these in <h1>
+    assert ">K</h1>" in r.text
+    assert ">C</h1>" in r.text
+    # Transcript content from _seed_proposal
+    assert "[00:00:00 X] hi" in r.text
+    # Video source points to the _inbox streaming URL
+    assert 'src="/video/meeting/_inbox/preview-stem"' in r.text
+    # Previews are collapsed by default (no open attr)
+    assert '<details class="preview-section" open>' not in r.text
+
+
+def test_inbox_card_preview_shows_waiting_when_not_ready(client):
+    # Proposal with no on-disk files → all preview sections show the placeholder
+    store.save_proposal(
+        stem="still-cooking",
+        proposed_subdir="",
+        proposed_tags=[],
+        status="transcribing",
+        error_message=None,
+    )
+    r = client.get("/inbox")
+    assert r.status_code == 200
+    assert "still-cooking" in r.text
+    assert "Waiting for pipeline to finish…" in r.text

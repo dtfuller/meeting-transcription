@@ -36,4 +36,33 @@
               class="secondary">Dismiss</button>
     </div>
   </form>
+  <details class="preview-section"><summary>📄 Knowledge</summary>
+    {% if item.knowledge_html %}
+      <article class="md">{{ item.knowledge_html|safe }}</article>
+    {% else %}
+      <p class="subtitle">Waiting for pipeline to finish…</p>
+    {% endif %}
+  </details>
+  <details class="preview-section"><summary>✅ Commitments</summary>
+    {% if item.commitments_html %}
+      <article class="md">{{ item.commitments_html|safe }}</article>
+    {% else %}
+      <p class="subtitle">Waiting for pipeline to finish…</p>
+    {% endif %}
+  </details>
+  <details class="preview-section"><summary>📜 Transcript</summary>
+    {% if item.transcript_html %}
+      <pre class="transcript">{{ item.transcript_html|safe }}</pre>
+    {% else %}
+      <p class="subtitle">Waiting for pipeline to finish…</p>
+    {% endif %}
+  </details>
+  <details class="preview-section"><summary>▶ Video</summary>
+    {% if item.has_video %}
+      <video class="preview-video" controls preload="metadata"
+             src="/video/meeting/_inbox/{{ proposal.stem|urlencode }}"></video>
+    {% else %}
+      <p class="subtitle">Video unavailable.</p>
+    {% endif %}
+  </details>
 </article>
