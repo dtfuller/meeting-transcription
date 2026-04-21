@@ -69,7 +69,7 @@ def test_inbox_apply_moves_files_and_saves_tags(client):
         follow_redirects=False,
     )
     assert r.status_code == 303
-    assert r.headers["location"] == "/meetings/multiturbo/m-1"
+    assert r.headers["location"] == "/inbox"
     assert (fs.DATA_DIR / "multiturbo" / "m-1.mov").exists()
     assert not (fs.DATA_DIR / "_inbox" / "m-1.mov").exists()
     assert (fs.TRANSCRIPTS_DIR / "multiturbo" / "m-1.txt").exists()

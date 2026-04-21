@@ -137,7 +137,7 @@ def inbox_apply(
         search.reindex_meeting(stem)
     except Exception:
         pass  # best-effort; files have already moved
-    return RedirectResponse(f"/meetings/{target_subdir}/{stem}", status_code=303)
+    return RedirectResponse("/inbox", status_code=303)
 
 
 @router.post("/inbox/{stem}/dismiss")
