@@ -108,7 +108,7 @@ def test_inbox_apply_preserves_filter_state_in_redirect(client):
         data={
             "target_subdir": "multiturbo",
             "tag_name": [], "tag_type": [],
-            "return_ready_only": "1",
+            "return_finished": "1",
             "return_page": "3",
         },
         follow_redirects=False,
@@ -117,7 +117,7 @@ def test_inbox_apply_preserves_filter_state_in_redirect(client):
     loc = r.headers["location"]
     assert "applied_subdir=multiturbo" in loc
     assert "applied_stem=m-filt" in loc
-    assert "ready_only=1" in loc
+    assert "finished=1" in loc
     assert "page=3" in loc
 
 
@@ -125,12 +125,12 @@ def test_inbox_dismiss_preserves_filter_state_in_redirect(client):
     _seed_proposal("m-dfilt", "multiturbo", [])
     r = client.post(
         "/inbox/m-dfilt/dismiss",
-        data={"return_ready_only": "1", "return_page": "2"},
+        data={"return_finished": "1", "return_page": "2"},
         follow_redirects=False,
     )
     assert r.status_code == 303
     loc = r.headers["location"]
-    assert "ready_only=1" in loc
+    assert "finished=1" in loc
     assert "page=2" in loc
 
 
@@ -220,7 +220,7 @@ def test_inbox_paginates_when_over_page_size(client):
     assert "Page 2 of 2" in r2.text
 
 
-def test_inbox_ready_only_filter_hides_incomplete_proposals(client):
+def test_inbox_finished_filter_hides_incomplete_proposals(client):
     # Full proposal (all 3 content files via _seed_proposal)
     _seed_proposal("complete-one", "multiturbo", [])
     # "Ready" status but no on-disk files — the exact case from the screenshot
@@ -239,9 +239,9 @@ def test_inbox_ready_only_filter_hides_incomplete_proposals(client):
     assert "All (2)" in r_all.text
     assert "Finished (1)" in r_all.text
 
-    # Ready-only filter
-    r_ready = client.get("/inbox?ready_only=1")
+    # Finished-only filter
+    r_ready = client.get("/inbox?finished=1")
     assert "complete-one" in r_ready.text
     assert "ready-but-empty" not in r_ready.text
     # Filter pill reflects state
-    assert 'class="filter-pill active" href="/inbox?ready_only=1"' in r_ready.text
+    assert 'class="filter-pill active" href="/inbox?finished=1"' in r_ready.text

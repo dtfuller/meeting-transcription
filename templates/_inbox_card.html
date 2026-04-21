@@ -7,7 +7,7 @@
     <p class="error-msg">{{ proposal.error_message }}</p>
   {% endif %}
   <form method="post" action="/inbox/{{ proposal.stem }}/apply" class="inbox-form">
-    <input type="hidden" name="return_ready_only" value="{{ 1 if ready_only else 0 }}">
+    <input type="hidden" name="return_finished" value="{{ 1 if finished else 0 }}">
     <input type="hidden" name="return_page" value="{{ page_info.page if page_info else 1 }}">
     <label>
       Subdir:

@@ -65,12 +65,12 @@ def _is_finished(item: InboxItem) -> bool:
 
 
 @router.get("/inbox")
-def inbox_index(request: Request, page: int = 1, ready_only: int = 0,
+def inbox_index(request: Request, page: int = 1, finished: int = 0,
                 applied_subdir: str | None = None,
                 applied_stem: str | None = None):
     all_items = _inbox_items()
     finished_count = sum(1 for i in all_items if _is_finished(i))
-    if ready_only:
+    if finished:
         filtered = [i for i in all_items if _is_finished(i)]
     else:
         filtered = all_items
@@ -91,8 +91,8 @@ def inbox_index(request: Request, page: int = 1, ready_only: int = 0,
             "items": pg.items,
             "page_info": pg,
             "page_base_url": "/inbox",
-            "page_params": {"ready_only": 1} if ready_only else {},
-            "ready_only": bool(ready_only),
+            "page_params": {"finished": 1} if finished else {},
+            "finished": bool(finished),
             "total_count": len(all_items),
             "finished_count": finished_count,
             "existing_subdirs": _existing_subdirs(),
@@ -109,7 +109,7 @@ def inbox_apply(
     target_subdir: Annotated[str, Form()],
     tag_name: Annotated[list[str], Form()] = [],
     tag_type: Annotated[list[str], Form()] = [],
-    return_ready_only: Annotated[int, Form()] = 0,
+    return_finished: Annotated[int, Form()] = 0,
     return_page: Annotated[int, Form()] = 1,
 ):
     proposal = store.get_proposal(stem)
@@ -152,8 +152,8 @@ def inbox_apply(
         pass  # best-effort; files have already moved
     from urllib.parse import urlencode
     params = {"applied_subdir": target_subdir, "applied_stem": stem}
-    if return_ready_only:
-        params["ready_only"] = 1
+    if return_finished:
+        params["finished"] = 1
     if return_page and return_page > 1:
         params["page"] = return_page
     return RedirectResponse(f"/inbox?{urlencode(params)}", status_code=303)
@@ -162,7 +162,7 @@ def inbox_apply(
 @router.post("/inbox/{stem}/dismiss")
 def inbox_dismiss(
     stem: str,
-    return_ready_only: Annotated[int, Form()] = 0,
+    return_finished: Annotated[int, Form()] = 0,
     return_page: Annotated[int, Form()] = 1,
 ):
     if store.get_proposal(stem) is None:
@@ -170,8 +170,8 @@ def inbox_dismiss(
     store.delete_proposal(stem)
     from urllib.parse import urlencode
     params = {}
-    if return_ready_only:
-        params["ready_only"] = 1
+    if return_finished:
+        params["finished"] = 1
     if return_page and return_page > 1:
         params["page"] = return_page
     target = "/inbox" if not params else f"/inbox?{urlencode(params)}"

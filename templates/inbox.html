@@ -21,8 +21,8 @@
 
   {% if total_count %}
     <div class="inbox-filter">
-      <a class="filter-pill {% if not ready_only %}active{% endif %}" href="/inbox">All ({{ total_count }})</a>
-      <a class="filter-pill {% if ready_only %}active{% endif %}" href="/inbox?ready_only=1">Finished ({{ finished_count }})</a>
+      <a class="filter-pill {% if not finished %}active{% endif %}" href="/inbox">All ({{ total_count }})</a>
+      <a class="filter-pill {% if finished %}active{% endif %}" href="/inbox?finished=1">Finished ({{ finished_count }})</a>
     </div>
   {% endif %}
 
@@ -33,7 +33,7 @@
       {% include "_inbox_card.html" %}
     {% endfor %}
     {% include "_pagination.html" %}
-  {% elif ready_only %}
+  {% elif finished %}
     <p class="subtitle">No finished proposals yet. Switch back to "All" to see the ones still in flight.</p>
   {% else %}
     <p class="subtitle">Inbox is empty. New recordings in <code>WATCH_DIR</code> will land here.</p>
