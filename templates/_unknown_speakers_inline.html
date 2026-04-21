@@ -2,8 +2,8 @@
   {% if clips %}
     {% for clip in clips %}
       <article class="speaker-inline-card">
-        <video class="speaker-inline-video" controls preload="none"
-               src="/video/clip/{{ clip.filename|urlencode }}"></video>
+        <video class="speaker-inline-video" controls preload="metadata"
+               src="/video/clip/{{ clip.filename|urlencode }}#t=0.1"></video>
         <form class="speaker-inline-form"
               hx-post="/speakers/label-inline"
               hx-target="closest .unknown-speakers-inline"

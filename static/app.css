@@ -122,7 +122,9 @@ pre.transcript { white-space: pre-wrap; font-family: var(--font-mono); font-size
 .clip-video { width: 320px; border-radius: 8px; background: black; }
 .clip-meta .clip-label { font-weight: 600; font-size: 0.92rem; letter-spacing: -0.01em; }
 .clip-meta .clip-source { color: var(--muted); font-size: 0.78rem; font-family: var(--font-mono); margin-top: 0.15rem; }
+.clip-actions { display: flex; gap: 0.5rem; align-items: center; }
 .clip-form { display: flex; gap: 0.5rem; }
+.clip-discard-form { display: flex; }
 .clip-form input { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; font-family: inherit; font-size: 0.85rem; min-width: 200px; }
 .clip-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
 .clip-form button { background: var(--accent); color: white; border: none; border-radius: 6px; padding: 0.4rem 0.9rem; font-family: inherit; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: filter 120ms ease; }

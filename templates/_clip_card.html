@@ -5,21 +5,26 @@
     <div class="clip-label">{{ clip.raw_label }}</div>
     <div class="clip-source">{{ clip.source_stem }} · @ {{ clip.timestamp_text }}</div>
   </div>
-  <form class="clip-form"
-        hx-post="/speakers/label"
-        hx-target="closest .speakers-page"
-        hx-swap="innerHTML">
-    <input type="hidden" name="filename" value="{{ clip.filename }}">
-    <input type="hidden" name="page" value="{{ page_info.page if page_info else 1 }}">
-    <input name="name" list="known-names" placeholder="Who is this?" autocomplete="off" required>
-    <button type="submit">Save</button>
-    <button type="button" class="clip-discard"
-            hx-post="/speakers/discard"
-            hx-target="closest .speakers-page"
-            hx-swap="innerHTML"
-            hx-include="closest article"
-            hx-confirm="Discard this clip? This can't be undone.">Discard</button>
-    <input type="hidden" name="source_stem" value="{{ clip.source_stem }}">
-    <input type="hidden" name="timestamp_text" value="{{ clip.timestamp_text }}">
-  </form>
+  <div class="clip-actions">
+    <form class="clip-form"
+          hx-post="/speakers/label"
+          hx-target="closest .speakers-page"
+          hx-swap="innerHTML">
+      <input type="hidden" name="filename" value="{{ clip.filename }}">
+      <input type="hidden" name="page" value="{{ page_info.page if page_info else 1 }}">
+      <input name="name" list="known-names" placeholder="Who is this?" autocomplete="off" required>
+      <button type="submit">Save</button>
+    </form>
+    <form class="clip-discard-form"
+          hx-post="/speakers/discard"
+          hx-target="closest .speakers-page"
+          hx-swap="innerHTML"
+          hx-confirm="Discard this clip? This can't be undone.">
+      <input type="hidden" name="filename" value="{{ clip.filename }}">
+      <input type="hidden" name="source_stem" value="{{ clip.source_stem }}">
+      <input type="hidden" name="timestamp_text" value="{{ clip.timestamp_text }}">
+      <input type="hidden" name="page" value="{{ page_info.page if page_info else 1 }}">
+      <button type="submit" class="clip-discard">Discard</button>
+    </form>
+  </div>
 </article>
