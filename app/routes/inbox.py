@@ -109,6 +109,8 @@ def inbox_apply(
     target_subdir: Annotated[str, Form()],
     tag_name: Annotated[list[str], Form()] = [],
     tag_type: Annotated[list[str], Form()] = [],
+    return_ready_only: Annotated[int, Form()] = 0,
+    return_page: Annotated[int, Form()] = 1,
 ):
     proposal = store.get_proposal(stem)
     if proposal is None:
@@ -149,16 +151,31 @@ def inbox_apply(
     except Exception:
         pass  # best-effort; files have already moved
     from urllib.parse import urlencode
-    qs = urlencode({"applied_subdir": target_subdir, "applied_stem": stem})
-    return RedirectResponse(f"/inbox?{qs}", status_code=303)
+    params = {"applied_subdir": target_subdir, "applied_stem": stem}
+    if return_ready_only:
+        params["ready_only"] = 1
+    if return_page and return_page > 1:
+        params["page"] = return_page
+    return RedirectResponse(f"/inbox?{urlencode(params)}", status_code=303)
 
 
 @router.post("/inbox/{stem}/dismiss")
-def inbox_dismiss(stem: str):
+def inbox_dismiss(
+    stem: str,
+    return_ready_only: Annotated[int, Form()] = 0,
+    return_page: Annotated[int, Form()] = 1,
+):
     if store.get_proposal(stem) is None:
         raise HTTPException(status_code=404)
     store.delete_proposal(stem)
-    return RedirectResponse("/inbox", status_code=303)
+    from urllib.parse import urlencode
+    params = {}
+    if return_ready_only:
+        params["ready_only"] = 1
+    if return_page and return_page > 1:
+        params["page"] = return_page
+    target = "/inbox" if not params else f"/inbox?{urlencode(params)}"
+    return RedirectResponse(target, status_code=303)
 
 
 @router.post("/watcher/start")

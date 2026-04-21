@@ -101,6 +101,39 @@ def test_inbox_apply_404_on_unknown_stem(client):
     assert r.status_code == 404
 
 
+def test_inbox_apply_preserves_filter_state_in_redirect(client):
+    _seed_proposal("m-filt", "multiturbo", [])
+    r = client.post(
+        "/inbox/m-filt/apply",
+        data={
+            "target_subdir": "multiturbo",
+            "tag_name": [], "tag_type": [],
+            "return_ready_only": "1",
+            "return_page": "3",
+        },
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    loc = r.headers["location"]
+    assert "applied_subdir=multiturbo" in loc
+    assert "applied_stem=m-filt" in loc
+    assert "ready_only=1" in loc
+    assert "page=3" in loc
+
+
+def test_inbox_dismiss_preserves_filter_state_in_redirect(client):
+    _seed_proposal("m-dfilt", "multiturbo", [])
+    r = client.post(
+        "/inbox/m-dfilt/dismiss",
+        data={"return_ready_only": "1", "return_page": "2"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    loc = r.headers["location"]
+    assert "ready_only=1" in loc
+    assert "page=2" in loc
+
+
 def test_inbox_shows_applied_toast_when_query_params_set(client):
     r = client.get("/inbox?applied_subdir=multiturbo&applied_stem=2026-04-14+17-00-43")
     assert r.status_code == 200
