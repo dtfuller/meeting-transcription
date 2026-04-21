@@ -69,7 +69,7 @@ def test_inbox_apply_moves_files_and_saves_tags(client):
         follow_redirects=False,
     )
     assert r.status_code == 303
-    assert r.headers["location"] == "/inbox"
+    assert r.headers["location"] == "/inbox?applied_subdir=multiturbo&applied_stem=m-1"
     assert (fs.DATA_DIR / "multiturbo" / "m-1.mov").exists()
     assert not (fs.DATA_DIR / "_inbox" / "m-1.mov").exists()
     assert (fs.TRANSCRIPTS_DIR / "multiturbo" / "m-1.txt").exists()
@@ -99,6 +99,22 @@ def test_inbox_apply_404_on_unknown_stem(client):
         data={"target_subdir": "whatever", "tag_name": [], "tag_type": []},
     )
     assert r.status_code == 404
+
+
+def test_inbox_shows_applied_toast_when_query_params_set(client):
+    r = client.get("/inbox?applied_subdir=multiturbo&applied_stem=2026-04-14+17-00-43")
+    assert r.status_code == 200
+    assert 'class="toast toast-flash"' in r.text
+    assert 'href="/meetings/multiturbo/2026-04-14%2017-00-43"' in r.text
+    assert "2026-04-14 17-00-43" in r.text
+
+
+def test_inbox_no_toast_without_applied_params(client):
+    r = client.get("/inbox")
+    assert r.status_code == 200
+    # The toast element itself is absent (only the base.html JS that looks
+    # for it may mention the class name).
+    assert 'class="toast toast-flash"' not in r.text
 
 
 def test_inbox_dismiss_removes_proposal_without_moving_files(client):

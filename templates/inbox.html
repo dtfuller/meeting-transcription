@@ -5,6 +5,14 @@
   {% for n in known_names_all %}<option value="{{ n }}">{% endfor %}
 </datalist>
 <section class="inbox-page">
+  {% if applied_meeting %}
+  <div class="toast toast-flash" data-dismiss-ms="6000" role="status">
+    <span>Meeting <a href="{{ applied_meeting.url }}">{{ applied_meeting.stem }}</a>
+      saved to <strong>{{ applied_meeting.subdir }}</strong>.</span>
+    <button type="button" class="toast-close" aria-label="Dismiss">×</button>
+  </div>
+  {% endif %}
+
   {% if not watcher_enabled %}
   <div class="banner">
     Watcher disabled. Set <code>WATCH_DIR</code> in <code>.env</code> and restart the server to enable auto-ingestion.

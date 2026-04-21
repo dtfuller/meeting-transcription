@@ -84,6 +84,20 @@
   </script>
   <script>
     (function () {
+      document.querySelectorAll('.toast-flash').forEach(function (el) {
+        const ms = parseInt(el.getAttribute('data-dismiss-ms') || '5000', 10);
+        const hide = function () {
+          el.classList.add('toast-hide');
+          setTimeout(function () { el.remove(); }, 400);
+        };
+        setTimeout(hide, ms);
+        const closeBtn = el.querySelector('.toast-close');
+        if (closeBtn) closeBtn.addEventListener('click', hide);
+      });
+    })();
+  </script>
+  <script>
+    (function () {
       document.addEventListener('click', function (e) {
         const btn = e.target.closest('.tree-toggle-all');
         if (!btn) return;

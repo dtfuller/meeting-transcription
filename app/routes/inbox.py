@@ -65,7 +65,9 @@ def _is_finished(item: InboxItem) -> bool:
 
 
 @router.get("/inbox")
-def inbox_index(request: Request, page: int = 1, ready_only: int = 0):
+def inbox_index(request: Request, page: int = 1, ready_only: int = 0,
+                applied_subdir: str | None = None,
+                applied_stem: str | None = None):
     all_items = _inbox_items()
     finished_count = sum(1 for i in all_items if _is_finished(i))
     if ready_only:
@@ -73,6 +75,14 @@ def inbox_index(request: Request, page: int = 1, ready_only: int = 0):
     else:
         filtered = all_items
     pg = pagination.paginate(filtered, page)
+    applied_meeting = None
+    if applied_subdir and applied_stem:
+        from urllib.parse import quote
+        applied_meeting = {
+            "subdir": applied_subdir,
+            "stem": applied_stem,
+            "url": f"/meetings/{quote(applied_subdir)}/{quote(applied_stem)}",
+        }
     return templates.TemplateResponse(
         request,
         "inbox.html",
@@ -87,6 +97,7 @@ def inbox_index(request: Request, page: int = 1, ready_only: int = 0):
             "finished_count": finished_count,
             "existing_subdirs": _existing_subdirs(),
             "watcher_enabled": bool(config_store.watch_dir()),
+            "applied_meeting": applied_meeting,
             **nav_counts(),
         },
     )
@@ -137,7 +148,9 @@ def inbox_apply(
         search.reindex_meeting(stem)
     except Exception:
         pass  # best-effort; files have already moved
-    return RedirectResponse("/inbox", status_code=303)
+    from urllib.parse import urlencode
+    qs = urlencode({"applied_subdir": target_subdir, "applied_stem": stem})
+    return RedirectResponse(f"/inbox?{qs}", status_code=303)
 
 
 @router.post("/inbox/{stem}/dismiss")

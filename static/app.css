@@ -138,6 +138,21 @@ pre.transcript { white-space: pre-wrap; font-family: var(--font-mono); font-size
 }
 .toast { position: sticky; bottom: 1rem; margin: 1rem auto 0; max-width: 540px; background: var(--panel); border: 1px solid var(--accent); border-radius: 12px; padding: 0.85rem 1.1rem; display: flex; gap: 0.75rem; align-items: center; box-shadow: var(--shadow-md); }
 .toast button { background: var(--accent); color: white; border: none; padding: 0.45rem 0.9rem; border-radius: 6px; font-family: inherit; font-weight: 600; cursor: pointer; }
+.toast-flash {
+  position: fixed; top: 4.5rem; right: 1.25rem; left: auto; bottom: auto;
+  margin: 0; max-width: 420px; border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, var(--panel));
+  justify-content: space-between;
+  transition: opacity 300ms ease, transform 300ms ease;
+  z-index: 50;
+}
+.toast-flash a { color: var(--accent); font-weight: 600; }
+.toast-flash .toast-close {
+  background: transparent; color: var(--muted); border: none;
+  font-size: 1.2rem; line-height: 1; padding: 0 0.3rem; cursor: pointer;
+}
+.toast-flash .toast-close:hover { color: var(--text); }
+.toast-flash.toast-hide { opacity: 0; transform: translateY(-6px); }
 .pipeline-page { display: flex; flex-direction: column; gap: 0.9rem; }
 .run-form { display: flex; gap: 0.75rem; align-items: center; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 0.8rem 1rem; box-shadow: var(--shadow-sm); }
 .run-form select, .run-form button { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.7rem; font-family: inherit; font-size: 0.85rem; }
