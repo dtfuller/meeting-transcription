@@ -187,7 +187,16 @@ pre.log { background: #0c0a08; color: #d4c9a8; padding: 1rem 1.1rem; border-radi
 .status-transcribing, .status-analyzing { background: var(--warn); }
 .status-ready { background: var(--ok); }
 .status-error { background: #b91c1c; }
-.error-msg { color: #b91c1c; font-size: 0.8rem; margin: 0; }
+.error-msg { color: #b91c1c; font-size: 0.82rem; margin: 0 0 0.5rem 0; }
+.error-msg > summary { cursor: pointer; font-weight: 600; list-style: none; }
+.error-msg > summary::-webkit-details-marker { display: none; }
+.error-msg pre {
+  margin: 0.45rem 0 0; padding: 0.55rem 0.7rem;
+  max-height: 14rem; overflow: auto;
+  background: color-mix(in srgb, #b91c1c 6%, var(--panel));
+  border-radius: 6px; font-size: 0.76rem; line-height: 1.4;
+  white-space: pre-wrap; color: var(--text);
+}
 .inbox-form { display: flex; flex-direction: column; gap: 0.6rem; }
 .inbox-form label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--muted); font-weight: 500; }
 .inbox-form input[name="target_subdir"] { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.55rem; color: var(--text); font-family: inherit; min-width: 240px; }
@@ -204,6 +213,8 @@ pre.log { background: #0c0a08; color: #d4c9a8; padding: 1rem 1.1rem; border-radi
 .inbox-actions button.secondary:hover:not([disabled]) { filter: none; border-color: var(--warn); color: var(--warn); }
 .inbox-actions button.danger { background: var(--bg); color: var(--danger, #b02a37); border: 1px solid var(--danger, #b02a37); }
 .inbox-actions button.danger:hover:not([disabled]) { filter: none; background: color-mix(in srgb, var(--danger, #b02a37) 10%, transparent); }
+.inbox-actions button.retry { background: var(--bg); color: var(--accent); border: 1px solid var(--accent); }
+.inbox-actions button.retry:hover:not([disabled]) { filter: none; background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .inbox-actions button[disabled] { opacity: 0.5; cursor: not-allowed; }
 .month-group { margin: 0.1rem 0 0.3rem 0.25rem; }
 .month-group > summary { cursor: pointer; font-size: 0.75rem; color: var(--muted); padding: 0.15rem 0; list-style: none; }
@@ -275,6 +286,9 @@ pre.log { background: #0c0a08; color: #d4c9a8; padding: 1rem 1.1rem; border-radi
 .filter-pill { text-decoration: none; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.8rem; }
 .filter-pill:hover { color: var(--accent); border-color: var(--accent); }
 .filter-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+.filter-pill.pill-error { color: #b91c1c; border-color: color-mix(in srgb, #b91c1c 40%, var(--border)); }
+.filter-pill.pill-error:hover { color: #b91c1c; border-color: #b91c1c; }
+.filter-pill.pill-error.active { background: #b91c1c; color: white; border-color: #b91c1c; }
 .unknown-speakers-inline { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.3rem 0 0.2rem 1.1rem; }
 .speaker-inline-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.6rem; display: grid; grid-template-columns: 260px 1fr; gap: 0.6rem; align-items: center; }
 .speaker-inline-video { width: 260px; border-radius: 6px; background: black; }

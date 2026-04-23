@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, Form, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -64,14 +64,26 @@ def _is_finished(item: InboxItem) -> bool:
     return bool(item.transcript_html and item.knowledge_html and item.commitments_html)
 
 
+def _is_finished_ok(item: InboxItem) -> bool:
+    return _is_finished(item) and item.proposal.status != "error"
+
+
+def _is_error(item: InboxItem) -> bool:
+    return item.proposal.status == "error"
+
+
 @router.get("/inbox")
-def inbox_index(request: Request, page: int = 1, finished: int = 0,
+def inbox_index(request: Request, page: int = 1,
+                inbox_filter: str = Query("", alias="filter"),
                 applied_subdir: str | None = None,
                 applied_stem: str | None = None):
     all_items = _inbox_items()
-    finished_count = sum(1 for i in all_items if _is_finished(i))
-    if finished:
-        filtered = [i for i in all_items if _is_finished(i)]
+    ok_count = sum(1 for i in all_items if _is_finished_ok(i))
+    error_count = sum(1 for i in all_items if _is_error(i))
+    if inbox_filter == "ok":
+        filtered = [i for i in all_items if _is_finished_ok(i)]
+    elif inbox_filter == "error":
+        filtered = [i for i in all_items if _is_error(i)]
     else:
         filtered = all_items
     pg = pagination.paginate(filtered, page)
@@ -91,10 +103,11 @@ def inbox_index(request: Request, page: int = 1, finished: int = 0,
             "items": pg.items,
             "page_info": pg,
             "page_base_url": "/inbox",
-            "page_params": {"finished": 1} if finished else {},
-            "finished": bool(finished),
+            "page_params": {"filter": inbox_filter} if inbox_filter else {},
+            "inbox_filter": inbox_filter,
             "total_count": len(all_items),
-            "finished_count": finished_count,
+            "ok_count": ok_count,
+            "error_count": error_count,
             "existing_subdirs": _existing_subdirs(),
             "watcher_enabled": bool(config_store.watch_dir()),
             "applied_meeting": applied_meeting,
@@ -109,7 +122,7 @@ def inbox_apply(
     target_subdir: Annotated[str, Form()],
     tag_name: Annotated[list[str], Form()] = [],
     tag_type: Annotated[list[str], Form()] = [],
-    return_finished: Annotated[int, Form()] = 0,
+    return_filter: Annotated[str, Form()] = "",
     return_page: Annotated[int, Form()] = 1,
 ):
     proposal = store.get_proposal(stem)
@@ -152,8 +165,8 @@ def inbox_apply(
         pass  # best-effort; files have already moved
     from urllib.parse import urlencode
     params = {"applied_subdir": target_subdir, "applied_stem": stem}
-    if return_finished:
-        params["finished"] = 1
+    if return_filter:
+        params["filter"] = return_filter
     if return_page and return_page > 1:
         params["page"] = return_page
     return RedirectResponse(f"/inbox?{urlencode(params)}", status_code=303)
@@ -162,26 +175,19 @@ def inbox_apply(
 @router.post("/inbox/{stem}/dismiss")
 def inbox_dismiss(
     stem: str,
-    return_finished: Annotated[int, Form()] = 0,
+    return_filter: Annotated[str, Form()] = "",
     return_page: Annotated[int, Form()] = 1,
 ):
     if store.get_proposal(stem) is None:
         raise HTTPException(status_code=404)
     store.delete_proposal(stem)
-    from urllib.parse import urlencode
-    params = {}
-    if return_finished:
-        params["finished"] = 1
-    if return_page and return_page > 1:
-        params["page"] = return_page
-    target = "/inbox" if not params else f"/inbox?{urlencode(params)}"
-    return RedirectResponse(target, status_code=303)
+    return _filtered_inbox_redirect(return_filter, return_page)
 
 
 @router.post("/inbox/{stem}/discard")
 def inbox_discard(
     stem: str,
-    return_finished: Annotated[int, Form()] = 0,
+    return_filter: Annotated[str, Form()] = "",
     return_page: Annotated[int, Form()] = 1,
 ):
     if store.get_proposal(stem) is None:
@@ -197,10 +203,33 @@ def inbox_discard(
             p.unlink()
     store.add_dismissed_inbox_stem(stem)
     store.delete_proposal(stem)
+    return _filtered_inbox_redirect(return_filter, return_page)
+
+
+@router.post("/inbox/{stem}/retry")
+def inbox_retry(
+    stem: str,
+    return_filter: Annotated[str, Form()] = "",
+    return_page: Annotated[int, Form()] = 1,
+):
+    p = store.get_proposal(stem)
+    if p is None:
+        raise HTTPException(status_code=404)
+    if p.status != "error":
+        raise HTTPException(status_code=409, detail="proposal not in error state")
+    inbox_mov = fs.DATA_DIR / store.INBOX_SUBDIR / f"{stem}.mov"
+    if not inbox_mov.exists():
+        raise HTTPException(status_code=409, detail="source file missing")
+    store.update_proposal_status(stem, "transcribing", None)
+    ingest.get_coordinator().enqueue_existing(inbox_mov, stem)
+    return _filtered_inbox_redirect(return_filter, return_page)
+
+
+def _filtered_inbox_redirect(return_filter: str, return_page: int) -> RedirectResponse:
     from urllib.parse import urlencode
-    params = {}
-    if return_finished:
-        params["finished"] = 1
+    params: dict = {}
+    if return_filter:
+        params["filter"] = return_filter
     if return_page and return_page > 1:
         params["page"] = return_page
     target = "/inbox" if not params else f"/inbox?{urlencode(params)}"

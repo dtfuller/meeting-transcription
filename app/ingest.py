@@ -132,7 +132,9 @@ class IngestCoordinator:
         stem = self._in_flight_stem
         if stem is not None:
             if rc != 0:
-                store.update_proposal_status(stem, "error", f"pipeline exit {rc}")
+                tail = "\n".join(pipeline.get_runner().history()[-20:])
+                msg = f"pipeline exit {rc}\n\n{tail}" if tail else f"pipeline exit {rc}"
+                store.update_proposal_status(stem, "error", msg)
             else:
                 store.update_proposal_status(stem, "analyzing", None)
                 try:

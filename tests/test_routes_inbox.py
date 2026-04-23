@@ -108,7 +108,7 @@ def test_inbox_apply_preserves_filter_state_in_redirect(client):
         data={
             "target_subdir": "multiturbo",
             "tag_name": [], "tag_type": [],
-            "return_finished": "1",
+            "return_filter": "ok",
             "return_page": "3",
         },
         follow_redirects=False,
@@ -117,7 +117,7 @@ def test_inbox_apply_preserves_filter_state_in_redirect(client):
     loc = r.headers["location"]
     assert "applied_subdir=multiturbo" in loc
     assert "applied_stem=m-filt" in loc
-    assert "finished=1" in loc
+    assert "filter=ok" in loc
     assert "page=3" in loc
 
 
@@ -125,12 +125,12 @@ def test_inbox_dismiss_preserves_filter_state_in_redirect(client):
     _seed_proposal("m-dfilt", "multiturbo", [])
     r = client.post(
         "/inbox/m-dfilt/dismiss",
-        data={"return_finished": "1", "return_page": "2"},
+        data={"return_filter": "error", "return_page": "2"},
         follow_redirects=False,
     )
     assert r.status_code == 303
     loc = r.headers["location"]
-    assert "finished=1" in loc
+    assert "filter=error" in loc
     assert "page=2" in loc
 
 
@@ -176,12 +176,12 @@ def test_inbox_discard_preserves_filter_state_in_redirect(client):
     _seed_proposal("m-disc-filt", "multiturbo", [])
     r = client.post(
         "/inbox/m-disc-filt/discard",
-        data={"return_finished": "1", "return_page": "2"},
+        data={"return_filter": "error", "return_page": "2"},
         follow_redirects=False,
     )
     assert r.status_code == 303
     loc = r.headers["location"]
-    assert "finished=1" in loc
+    assert "filter=error" in loc
     assert "page=2" in loc
 
 
@@ -252,10 +252,10 @@ def test_inbox_paginates_when_over_page_size(client):
     assert "Page 2 of 2" in r2.text
 
 
-def test_inbox_finished_filter_hides_incomplete_proposals(client):
+def test_inbox_filter_ok_hides_errors_and_incomplete(client):
     # Full proposal (all 3 content files via _seed_proposal)
     _seed_proposal("complete-one", "multiturbo", [])
-    # "Ready" status but no on-disk files — the exact case from the screenshot
+    # "Ready" status but no on-disk files — looks ready, content missing
     store.save_proposal(
         stem="ready-but-empty",
         proposed_subdir="info-general",
@@ -263,17 +263,116 @@ def test_inbox_finished_filter_hides_incomplete_proposals(client):
         status="ready",
         error_message=None,
     )
+    # Errored proposal with all content present — still excluded from "ok"
+    _seed_proposal("errored-but-complete", "multiturbo", [], status="error")
 
     # All filter (default)
     r_all = client.get("/inbox")
     assert "complete-one" in r_all.text
     assert "ready-but-empty" in r_all.text
-    assert "All (2)" in r_all.text
-    assert "Finished (1)" in r_all.text
+    assert "errored-but-complete" in r_all.text
+    assert "All (3)" in r_all.text
+    assert "Finished OK (1)" in r_all.text
+    assert "Errored (1)" in r_all.text
 
-    # Finished-only filter
-    r_ready = client.get("/inbox?finished=1")
-    assert "complete-one" in r_ready.text
-    assert "ready-but-empty" not in r_ready.text
-    # Filter pill reflects state
-    assert 'class="filter-pill active" href="/inbox?finished=1"' in r_ready.text
+    # Finished OK filter — only complete-one passes
+    r_ok = client.get("/inbox?filter=ok")
+    assert "complete-one" in r_ok.text
+    assert "ready-but-empty" not in r_ok.text
+    assert "errored-but-complete" not in r_ok.text
+    assert 'class="filter-pill active" href="/inbox?filter=ok"' in r_ok.text
+
+
+def test_inbox_filter_error_shows_only_errored_proposals(client):
+    _seed_proposal("ok-stem", "multiturbo", [])
+    _seed_proposal("err-stem", "multiturbo", [], status="error")
+
+    r = client.get("/inbox?filter=error")
+    assert "err-stem" in r.text
+    assert "ok-stem" not in r.text
+
+
+def test_inbox_retry_reenqueues_errored_proposal(client, monkeypatch):
+    _seed_proposal("retry-me", "multiturbo", [], status="error")
+    # Give it a realistic error message so the tail renders
+    store.save_proposal(
+        stem="retry-me",
+        proposed_subdir="multiturbo",
+        proposed_tags=[],
+        status="error",
+        error_message="pipeline exit 1\n\ntraceback: boom",
+    )
+
+    calls: list[tuple] = []
+    monkeypatch.setattr(
+        "app.ingest.IngestCoordinator.enqueue_existing",
+        lambda self, path, stem: calls.append((path, stem)),
+    )
+
+    r = client.post(
+        "/inbox/retry-me/retry",
+        data={"return_filter": "error", "return_page": "2"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert "filter=error" in r.headers["location"]
+    assert "page=2" in r.headers["location"]
+    # Pipeline was re-queued with the inbox path + stem
+    assert len(calls) == 1
+    path, stem = calls[0]
+    assert stem == "retry-me"
+    assert path == fs.DATA_DIR / "_inbox" / "retry-me.mov"
+    # Status reset so the card no longer shows as errored
+    assert store.get_proposal("retry-me").status == "transcribing"
+    assert store.get_proposal("retry-me").error_message is None
+
+
+def test_inbox_retry_404_on_unknown_stem(client):
+    r = client.post("/inbox/ghost/retry")
+    assert r.status_code == 404
+
+
+def test_inbox_retry_409_when_not_errored(client):
+    _seed_proposal("not-errored", "multiturbo", [], status="ready")
+    r = client.post("/inbox/not-errored/retry")
+    assert r.status_code == 409
+
+
+def test_inbox_apply_succeeds_on_error_status(client):
+    # Errored proposal with only the .mov on disk (no transcript/knowledge/commitments)
+    store.save_proposal(
+        stem="partial-err",
+        proposed_subdir="multiturbo",
+        proposed_tags=[],
+        status="error",
+        error_message="pipeline exit 1",
+    )
+    inbox_mov = fs.DATA_DIR / store.INBOX_SUBDIR / "partial-err.mov"
+    inbox_mov.parent.mkdir(parents=True, exist_ok=True)
+    inbox_mov.write_bytes(b"\x00" * 16)
+
+    r = client.post(
+        "/inbox/partial-err/apply",
+        data={"target_subdir": "multiturbo", "tag_name": [], "tag_type": []},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert (fs.DATA_DIR / "multiturbo" / "partial-err.mov").exists()
+    assert not (fs.DATA_DIR / "_inbox" / "partial-err.mov").exists()
+    assert store.get_proposal("partial-err") is None
+
+
+def test_error_card_renders_tail_in_details(client):
+    store.save_proposal(
+        stem="tail-test",
+        proposed_subdir="multiturbo",
+        proposed_tags=[],
+        status="error",
+        error_message="pipeline exit 1\n\nTraceback (most recent call last):\n  File \"x.py\"...",
+    )
+    r = client.get("/inbox")
+    assert r.status_code == 200
+    assert 'class="error-msg"' in r.text
+    assert "pipeline exit 1" in r.text
+    assert "Traceback" in r.text
+    assert "<pre>" in r.text
