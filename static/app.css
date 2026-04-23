@@ -202,6 +202,8 @@ pre.log { background: #0c0a08; color: #d4c9a8; padding: 1rem 1.1rem; border-radi
 .inbox-actions button:hover:not([disabled]) { filter: brightness(1.08); }
 .inbox-actions button.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
 .inbox-actions button.secondary:hover:not([disabled]) { filter: none; border-color: var(--warn); color: var(--warn); }
+.inbox-actions button.danger { background: var(--bg); color: var(--danger, #b02a37); border: 1px solid var(--danger, #b02a37); }
+.inbox-actions button.danger:hover:not([disabled]) { filter: none; background: color-mix(in srgb, var(--danger, #b02a37) 10%, transparent); }
 .inbox-actions button[disabled] { opacity: 0.5; cursor: not-allowed; }
 .month-group { margin: 0.1rem 0 0.3rem 0.25rem; }
 .month-group > summary { cursor: pointer; font-size: 0.75rem; color: var(--muted); padding: 0.15rem 0; list-style: none; }

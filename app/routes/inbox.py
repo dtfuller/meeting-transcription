@@ -178,6 +178,35 @@ def inbox_dismiss(
     return RedirectResponse(target, status_code=303)
 
 
+@router.post("/inbox/{stem}/discard")
+def inbox_discard(
+    stem: str,
+    return_finished: Annotated[int, Form()] = 0,
+    return_page: Annotated[int, Form()] = 1,
+):
+    if store.get_proposal(stem) is None:
+        raise HTTPException(status_code=404)
+    paths = [
+        fs.DATA_DIR / store.INBOX_SUBDIR / f"{stem}.mov",
+        fs.TRANSCRIPTS_DIR / store.INBOX_SUBDIR / f"{stem}.txt",
+        fs.INFORMATION_DIR / store.INBOX_SUBDIR / f"{stem}-knowledge.md",
+        fs.INFORMATION_DIR / store.INBOX_SUBDIR / f"{stem}-commitments.md",
+    ]
+    for p in paths:
+        if p.exists():
+            p.unlink()
+    store.add_dismissed_inbox_stem(stem)
+    store.delete_proposal(stem)
+    from urllib.parse import urlencode
+    params = {}
+    if return_finished:
+        params["finished"] = 1
+    if return_page and return_page > 1:
+        params["page"] = return_page
+    target = "/inbox" if not params else f"/inbox?{urlencode(params)}"
+    return RedirectResponse(target, status_code=303)
+
+
 @router.post("/watcher/start")
 def watcher_start():
     watch_dir = os.getenv("WATCH_DIR")

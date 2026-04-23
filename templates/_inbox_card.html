@@ -36,6 +36,13 @@
               formnovalidate
               {% if proposal.status in ('transcribing', 'analyzing') %}disabled{% endif %}
               class="secondary">Dismiss</button>
+      <button type="submit"
+              formaction="/inbox/{{ proposal.stem }}/discard"
+              formmethod="post"
+              formnovalidate
+              {% if proposal.status in ('transcribing', 'analyzing') %}disabled{% endif %}
+              onclick="return confirm('Discard this recording and its transcript, knowledge, and commitments? This cannot be undone.');"
+              class="danger">Discard</button>
     </div>
   </form>
   <details class="preview-section"><summary>📄 Knowledge</summary>

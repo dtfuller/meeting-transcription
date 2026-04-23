@@ -151,6 +151,31 @@ def test_scan_existing_skips_already_known_stems(tmp_path):
     assert sent[0].name == "fresh.mov"
 
 
+def test_on_new_file_skips_blocklisted_stem(tmp_path):
+    store.add_dismissed_inbox_stem("blocked")
+    src = tmp_path / "external" / "blocked.mov"
+    _write_mov(src)
+
+    ingest.get_coordinator().on_new_file(src)
+
+    # No copy and no proposal row should have been created.
+    assert not (fs.DATA_DIR / "_inbox" / "blocked.mov").exists()
+    assert store.get_proposal("blocked") is None
+
+
+def test_enqueue_existing_skips_blocklisted_stem(tmp_path):
+    store.add_dismissed_inbox_stem("blocked2")
+    inbox_dir = fs.DATA_DIR / "_inbox"
+    inbox_path = inbox_dir / "blocked2.mov"
+    _write_mov(inbox_path)
+
+    ingest.get_coordinator().enqueue_existing(inbox_path, "blocked2")
+
+    coord = ingest.get_coordinator()
+    assert coord._in_flight_stem is None
+    assert not any(s == "blocked2" for _, s in coord._queue)
+
+
 def test_reconcile_stuck_proposals_reenqueues_transcribing_rows(tmp_path):
     # Simulate: a proposal stuck in 'transcribing' whose file still lives in _inbox.
     inbox_dir = fs.DATA_DIR / "_inbox"

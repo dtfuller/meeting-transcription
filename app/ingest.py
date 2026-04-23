@@ -68,6 +68,8 @@ class IngestCoordinator:
 
     def on_new_file(self, external_path: Path) -> None:
         stem = external_path.stem
+        if stem in store.list_dismissed_inbox_stems():
+            return  # user explicitly discarded this recording
         inbox_dir = fs.DATA_DIR / store.INBOX_SUBDIR
         inbox_dir.mkdir(parents=True, exist_ok=True)
         inbox_path = inbox_dir / f"{stem}.mov"
@@ -89,6 +91,8 @@ class IngestCoordinator:
         """Re-enqueue a file already in data/_inbox. Used by startup reconcile
         when the in-memory queue was lost across a server restart but the DB
         still has rows stuck in 'transcribing'/'analyzing'."""
+        if stem in store.list_dismissed_inbox_stems():
+            return
         with self._lock:
             # Dedupe: don't stack duplicates if called multiple times.
             if any(s == stem for _, s in self._queue):

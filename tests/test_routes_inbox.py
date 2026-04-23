@@ -156,6 +156,38 @@ def test_inbox_dismiss_removes_proposal_without_moving_files(client):
     assert r.status_code == 303
     assert store.get_proposal("m-3") is None
     assert (fs.DATA_DIR / "_inbox" / "m-3.mov").exists()
+    # Dismiss stays soft — it must NOT blocklist the stem.
+    assert "m-3" not in store.list_dismissed_inbox_stems()
+
+
+def test_inbox_discard_deletes_files_and_blocks_stem(client):
+    _seed_proposal("m-disc", "multiturbo", [])
+    r = client.post("/inbox/m-disc/discard", follow_redirects=False)
+    assert r.status_code == 303
+    assert store.get_proposal("m-disc") is None
+    assert not (fs.DATA_DIR / "_inbox" / "m-disc.mov").exists()
+    assert not (fs.TRANSCRIPTS_DIR / "_inbox" / "m-disc.txt").exists()
+    assert not (fs.INFORMATION_DIR / "_inbox" / "m-disc-knowledge.md").exists()
+    assert not (fs.INFORMATION_DIR / "_inbox" / "m-disc-commitments.md").exists()
+    assert "m-disc" in store.list_dismissed_inbox_stems()
+
+
+def test_inbox_discard_preserves_filter_state_in_redirect(client):
+    _seed_proposal("m-disc-filt", "multiturbo", [])
+    r = client.post(
+        "/inbox/m-disc-filt/discard",
+        data={"return_finished": "1", "return_page": "2"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    loc = r.headers["location"]
+    assert "finished=1" in loc
+    assert "page=2" in loc
+
+
+def test_inbox_discard_404_on_unknown_stem(client):
+    r = client.post("/inbox/ghost/discard")
+    assert r.status_code == 404
 
 
 def test_watcher_status_endpoints(client):
