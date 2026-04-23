@@ -1,3 +1,16 @@
+{% if unknown_meetings_count %}
+<div class="speakers-toolbar">
+  <span class="toolbar-count">
+    <strong>{{ unknown_meetings_count }}</strong>
+    meeting{{ 's' if unknown_meetings_count != 1 else '' }}
+    still {{ 'have' if unknown_meetings_count != 1 else 'has' }} unknown speakers.
+  </span>
+  <form hx-post="/speakers/reclassify" hx-target="body" hx-swap="outerHTML"
+        hx-confirm="Re-run speaker identification across every meeting with unknown speakers, using the current known-names/to-use/ clips?">
+    <button type="submit" class="toolbar-action">↻ Reclassify all</button>
+  </form>
+</div>
+{% endif %}
 <div class="speakers-queue">
   {% if clips %}
     {% include "_pagination.html" %}

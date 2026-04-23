@@ -37,6 +37,16 @@ def test_speakers_count_in_nav(client):
     assert '<span class="count">2</span>' in r.text
 
 
+def test_speakers_shows_persistent_reclassify_toolbar(client):
+    r = client.get("/speakers")
+    assert r.status_code == 200
+    assert 'class="speakers-toolbar"' in r.text
+    assert "Reclassify all" in r.text
+    assert 'hx-post="/speakers/reclassify"' in r.text
+    # Confirm dialog is attached so a user doesn't fire it by accident.
+    assert "hx-confirm=" in r.text
+
+
 from app import clips
 
 

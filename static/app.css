@@ -118,6 +118,23 @@ body { margin: 0; font-family: var(--font-sans); background: var(--bg); color: v
 pre.transcript { white-space: pre-wrap; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.65; color: var(--muted); margin: 0; letter-spacing: -0.01em; }
 .transcript .unk { color: var(--warn); font-weight: 600; }
 .speakers-queue { display: flex; flex-direction: column; gap: 0.75rem; }
+.speakers-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; margin-bottom: 0.85rem; padding: 0.7rem 0.95rem;
+  background: var(--panel); border: 1px solid var(--border);
+  border-left: 3px solid var(--warn); border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+}
+.speakers-toolbar .toolbar-count { color: var(--text); font-size: 0.9rem; }
+.speakers-toolbar .toolbar-count strong { color: var(--warn); }
+.speakers-toolbar form { margin: 0; }
+.speakers-toolbar button.toolbar-action {
+  background: var(--accent); color: white; border: none;
+  border-radius: 8px; padding: 0.5rem 0.95rem;
+  font-family: inherit; font-weight: 600; font-size: 0.85rem;
+  cursor: pointer; transition: filter 120ms ease;
+}
+.speakers-toolbar button.toolbar-action:hover { filter: brightness(1.08); }
 .clip-card { display: grid; grid-template-columns: 320px 1fr auto; gap: 1rem; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1rem; align-items: center; box-shadow: var(--shadow-sm); }
 .clip-video { width: 320px; border-radius: 8px; background: black; }
 .clip-meta .clip-label { font-weight: 600; font-size: 0.92rem; letter-spacing: -0.01em; }
