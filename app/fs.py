@@ -102,6 +102,27 @@ def load_commitments(m: Meeting) -> str:
     return m.commitments_path.read_text(encoding="utf-8") if m.has_commitments else ""
 
 
+def parse_clip_filename(filename: str) -> Clip | None:
+    """Parse a to-classify clip filename into a Clip. Returns None if the
+    name doesn't match the '<raw_label> - <source_stem> - MMmSSs.mov' shape."""
+    m = _CLIP_TS_RE.search(filename)
+    if not m:
+        return None
+    timestamp_text = m.group(1)
+    head = filename[: m.start()].rstrip(" -")
+    parts = head.split(" - ", 1)
+    if len(parts) != 2:
+        return None
+    raw_label, source_stem = parts[0], parts[1]
+    return Clip(
+        filename=filename,
+        path=KNOWN_NAMES_TO_CLASSIFY / filename,
+        raw_label=raw_label,
+        source_stem=source_stem,
+        timestamp_text=timestamp_text,
+    )
+
+
 def list_unknown_clips() -> list[Clip]:
     if not KNOWN_NAMES_TO_CLASSIFY.exists():
         return []

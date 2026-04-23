@@ -135,6 +135,17 @@ pre.transcript { white-space: pre-wrap; font-family: var(--font-mono); font-size
   cursor: pointer; transition: filter 120ms ease;
 }
 .speakers-toolbar button.toolbar-action:hover { filter: brightness(1.08); }
+.speakers-toolbar .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
+.speakers-toolbar button.toolbar-action-light {
+  background: var(--bg); color: var(--accent);
+  border: 1px solid var(--accent); border-radius: 8px;
+  padding: 0.5rem 0.95rem;
+  font-family: inherit; font-weight: 600; font-size: 0.85rem;
+  cursor: pointer; transition: background 120ms ease;
+}
+.speakers-toolbar button.toolbar-action-light:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
 .clip-card { display: grid; grid-template-columns: 320px 1fr auto; gap: 1rem; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1rem; align-items: center; box-shadow: var(--shadow-sm); }
 .clip-video { width: 320px; border-radius: 8px; background: black; }
 .clip-meta .clip-label { font-weight: 600; font-size: 0.92rem; letter-spacing: -0.01em; }
