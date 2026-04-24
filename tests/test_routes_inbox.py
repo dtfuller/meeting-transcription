@@ -376,3 +376,35 @@ def test_error_card_renders_tail_in_details(client):
     assert "pipeline exit 1" in r.text
     assert "Traceback" in r.text
     assert "<pre>" in r.text
+
+
+def test_inbox_apply_routes_through_move_meeting_artifacts(client, monkeypatch):
+    from app import fs as _fs
+    real = _fs.move_meeting_artifacts
+    calls = []
+
+    def spy(stem, src, dst):
+        calls.append((stem, src, dst))
+        return real(stem, src, dst)
+
+    monkeypatch.setattr("app.routes.inbox.fs.move_meeting_artifacts", spy)
+    _seed_proposal("m-via-helper", "multiturbo", [])
+    r = client.post(
+        "/inbox/m-via-helper/apply",
+        data={"target_subdir": "multiturbo", "tag_name": [], "tag_type": []},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert calls == [("m-via-helper", "_inbox", "multiturbo")]
+
+
+def test_inbox_apply_accepts_nested_target_subdir(client):
+    _seed_proposal("m-nested-apply", "", [])
+    r = client.post(
+        "/inbox/m-nested-apply/apply",
+        data={"target_subdir": "Clients/Acme", "tag_name": [], "tag_type": []},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    from app import fs as _fs
+    assert (_fs.DATA_DIR / "Clients" / "Acme" / "m-nested-apply.mov").exists()

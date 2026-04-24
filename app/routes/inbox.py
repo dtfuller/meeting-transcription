@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
@@ -11,6 +10,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import config_store, fs, ingest, markdown as md_render, pagination, search, store, watcher as watcher_mod
+from app import folders as folders_module
 from app.routes._context import nav_counts
 
 router = APIRouter()
@@ -30,8 +30,7 @@ class InboxItem:
 
 
 def _existing_subdirs() -> list[str]:
-    return sorted({m.subdir for m in fs.list_meetings()
-                   if m.subdir and m.subdir != store.INBOX_SUBDIR})
+    return [f.path for f in fs.list_folders()]
 
 
 def _inbox_items() -> list[InboxItem]:
@@ -129,26 +128,14 @@ def inbox_apply(
     if proposal is None:
         raise HTTPException(status_code=404)
 
-    target_subdir = target_subdir.strip()
+    try:
+        target_subdir = folders_module.validate_folder_path(target_subdir)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not target_subdir:
         raise HTTPException(status_code=400, detail="target_subdir is required")
-    if "/" in target_subdir or "\\" in target_subdir or ".." in target_subdir:
-        raise HTTPException(status_code=400, detail="invalid target_subdir")
 
-    moves = [
-        (fs.DATA_DIR / store.INBOX_SUBDIR / f"{stem}.mov",
-         fs.DATA_DIR / target_subdir / f"{stem}.mov"),
-        (fs.TRANSCRIPTS_DIR / store.INBOX_SUBDIR / f"{stem}.txt",
-         fs.TRANSCRIPTS_DIR / target_subdir / f"{stem}.txt"),
-        (fs.INFORMATION_DIR / store.INBOX_SUBDIR / f"{stem}-knowledge.md",
-         fs.INFORMATION_DIR / target_subdir / f"{stem}-knowledge.md"),
-        (fs.INFORMATION_DIR / store.INBOX_SUBDIR / f"{stem}-commitments.md",
-         fs.INFORMATION_DIR / target_subdir / f"{stem}-commitments.md"),
-    ]
-    for src, dst in moves:
-        if src.exists():
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(src), str(dst))
+    fs.move_meeting_artifacts(stem, store.INBOX_SUBDIR, target_subdir)
 
     tags = []
     for n, t in zip(tag_name, tag_type):
