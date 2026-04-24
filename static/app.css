@@ -308,3 +308,57 @@ pre.log { background: #0c0a08; color: #d4c9a8; padding: 1rem 1.1rem; border-radi
 .speaker-inline-label { color: var(--warn); font-weight: 600; }
 .speaker-inline-form input[name="name"] { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.85rem; }
 .speaker-inline-form button { background: var(--accent); color: white; border: none; border-radius: 6px; padding: 0.3rem 0.6rem; font-weight: 600; font-size: 0.8rem; cursor: pointer; justify-self: start; }
+
+/* Nested tree — folder CRUD + DnD */
+.tree-toolbar { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+.new-folder-input {
+  width: 100%; padding: 0.3rem 0.4rem;
+  background: transparent; border: 1px dashed var(--border);
+  border-radius: 6px; font: inherit; color: var(--muted); font-size: 0.78rem;
+}
+.new-folder-input:focus { outline: none; border-color: var(--accent); color: var(--text); }
+
+.folder-group > summary.folder {
+  display: flex; align-items: center; gap: 0.4rem;
+  cursor: pointer; padding: 0.15rem 0.2rem;
+}
+.folder-group > summary.folder:hover { color: var(--accent); }
+.folder-actions {
+  margin-left: auto; display: inline-flex; gap: 0.2rem;
+  opacity: 0; transition: opacity 120ms ease;
+}
+.folder-group > summary:hover .folder-actions,
+.folder-group > summary:focus-within .folder-actions { opacity: 1; }
+@media (hover: none) { .folder-actions { opacity: 1; } }
+
+.folder-actions button.fi {
+  background: transparent; border: none; cursor: pointer;
+  padding: 0 0.15rem; font-size: 0.85rem; line-height: 1;
+  color: var(--muted);
+}
+.folder-actions button.fi:hover { color: var(--accent); }
+.folder-actions button.fi.fi-del:hover { color: var(--danger, #b02a37); }
+
+.tree-children { list-style: none; padding-left: 0.85rem; margin: 0; }
+.tree-root-drop { padding-left: 0; }
+.tree-leaf { display: flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.2rem; }
+
+/* Drop-target highlight (Task 12 wires this via JS) */
+.drop-target { background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 4px; }
+
+.tree-banner {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.55rem 0.75rem; margin: 0.4rem 0.5rem;
+  background: color-mix(in srgb, var(--danger, #b02a37) 10%, var(--panel));
+  color: var(--danger, #b02a37);
+  border: 1px solid var(--danger, #b02a37);
+  border-radius: 6px; font-size: 0.82rem;
+}
+.tree-banner .toast-close {
+  margin-left: auto; background: transparent; border: none;
+  color: inherit; cursor: pointer; font-size: 1rem; line-height: 1;
+}
+
+/* Breadcrumb from Task 7's _meeting_detail.html */
+.crumbs { color: var(--muted); font-size: 0.8rem; margin: 0.15rem 0 0.45rem; }
+.crumbs span { font-weight: 600; color: var(--text); }

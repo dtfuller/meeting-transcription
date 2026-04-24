@@ -14,6 +14,7 @@ from app import pipeline
 from app import search
 from app import store
 from app.routes._tree import render_tree_partial, error as tree_error
+from app.routes._context import nav_counts
 
 _log = logging.getLogger(__name__)
 
@@ -35,7 +36,25 @@ def _reindex_on_success(stem: str):
             except Exception:
                 pass
     return cb
-from app.routes._context import nav_counts
+
+
+def _filter_tree(node: fs.TreeNode, allowed_stems: set[str]) -> fs.TreeNode:
+    """Return a pruned copy of ``node`` keeping only meetings whose stems are in
+    ``allowed_stems``. Subfolders with no matching meetings anywhere beneath
+    them are removed."""
+    filtered_subs = []
+    for sub in node.subfolders:
+        pruned = _filter_tree(sub, allowed_stems)
+        if pruned.meetings or pruned.subfolders:
+            filtered_subs.append(pruned)
+    filtered_meetings = [m for m in node.meetings if m.stem in allowed_stems]
+    return fs.TreeNode(
+        path=node.path,
+        name=node.name,
+        subfolders=filtered_subs,
+        meetings=filtered_meetings,
+    )
+
 
 ROOT = Path(__file__).parent.parent.parent
 EXTRACT_PY = ROOT / "extract.py"
@@ -59,19 +78,23 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / 
 @router.get("/meetings")
 def meetings_index(request: Request, tag: str | None = None, tag_type: str | None = None):
     meetings = fs.list_meetings()
-    if tag and tag_type in ("person", "topic", "project"):
+    tag_filter_active = bool(tag and tag_type in ("person", "topic", "project"))
+    if tag_filter_active:
         allowed_stems = set(store.list_stems_with_tag(tag, tag_type))
         meetings = [m for m in meetings if m.stem in allowed_stems]
     tags_by_stem = {m.stem: store.list_meeting_tags(m.stem) for m in meetings}
     tag_split_by_stem = {stem: _split_row_tags(t) for stem, t in tags_by_stem.items()}
-    meeting_blocks = fs.group_meetings(meetings)
+    tree = fs.build_tree()
+    if tag_filter_active:
+        tree = _filter_tree(tree, {m.stem for m in meetings})
     return templates.TemplateResponse(
         request,
         "meetings.html",
         {
             "active_tab": "meetings",
             "meetings": meetings,
-            "meeting_blocks": meeting_blocks,
+            "tree": tree,
+            "active_stem": None,
             "meeting": None,
             "selected": None,
             "tags_by_stem": tags_by_stem,
@@ -107,7 +130,7 @@ def meeting_detail(stem: str, request: Request, view: str = "knowledge"):
     )
     prev_meeting = meetings[idx - 1] if idx is not None and idx > 0 else None
     next_meeting = meetings[idx + 1] if idx is not None and idx < len(meetings) - 1 else None
-    meeting_blocks = fs.group_meetings(meetings)
+    tree = fs.build_tree()
     unknown_clips = [c for c in fs.list_unknown_clips() if c.source_stem == stem]
     return templates.TemplateResponse(
         request,
@@ -115,7 +138,8 @@ def meeting_detail(stem: str, request: Request, view: str = "knowledge"):
         {
             "active_tab": "meetings",
             "meetings": meetings,
-            "meeting_blocks": meeting_blocks,
+            "tree": tree,
+            "active_stem": stem,
             "meeting": m,
             "selected": m,
             "view": view,

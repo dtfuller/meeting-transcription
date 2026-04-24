@@ -178,37 +178,9 @@ def test_tree_renders_flat_for_small_subdir(app_with_tree):
     # Sample tree has 2 meetings in multiturbo, 1 in check-in — all below threshold.
     r = app_with_tree.get("/meetings")
     assert r.status_code == 200
-    # No month-group details because nothing is grouped by month.
-    # (folder-group <details> always wraps each subdir.)
+    # No month-group details because month grouping has been removed
+    # in favor of the recursive nested tree.
     assert 'class="month-group"' not in r.text
-
-
-def test_tree_renders_details_groups_when_subdir_exceeds_threshold(tmp_path, monkeypatch):
-    # Build a fresh tree with 11 meetings in one subdir spanning two months.
-    from app import fs, store
-    from server import create_app
-    monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
-    monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
-    monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
-    monkeypatch.setattr(fs, "KNOWN_NAMES_TO_USE", tmp_path / "known-names" / "to-use")
-    monkeypatch.setattr(fs, "KNOWN_NAMES_TO_CLASSIFY", tmp_path / "known-names" / "to-classify")
-    monkeypatch.setattr(store, "DB_PATH", tmp_path / "ui.db")
-    store.init_schema()
-    # 5 in April, 6 in May → 11 total, above the default threshold of 10
-    for day in range(1, 6):
-        p = tmp_path / "data" / "big" / f"2026-04-{day:02d} 10-00-00.mov"
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_bytes(b"\x00" * 16)
-    for day in range(1, 7):
-        p = tmp_path / "data" / "big" / f"2026-05-{day:02d} 10-00-00.mov"
-        p.write_bytes(b"\x00" * 16)
-
-    client = TestClient(create_app())
-    r = client.get("/meetings")
-    assert r.status_code == 200
-    assert '<details class="month-group" open>' in r.text  # most-recent May open
-    assert "2026-05" in r.text
-    assert "2026-04" in r.text
 
 
 def test_meeting_detail_defaults_to_knowledge_subtab(app_with_tree):
@@ -275,49 +247,15 @@ def test_split_row_tags_caps_at_2_persons_and_1_other():
     assert set(hidden_names) == {"P2", "P3", "P4", "T1", "T2", "J0", "J1"}
 
 
-def test_meetings_tree_caps_tags_with_overflow(tmp_path, monkeypatch):
-    from app import fs, store
-    from server import create_app
-    monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
-    monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
-    monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
-    monkeypatch.setattr(fs, "KNOWN_NAMES_TO_USE", tmp_path / "known-names" / "to-use")
-    monkeypatch.setattr(fs, "KNOWN_NAMES_TO_CLASSIFY", tmp_path / "known-names" / "to-classify")
-    monkeypatch.setattr(store, "DB_PATH", tmp_path / "ui.db")
-    store.init_schema()
-
-    stem = "2026-05-01 10-00-00"
-    p = tmp_path / "data" / "big" / f"{stem}.mov"
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_bytes(b"\x00" * 16)
-
-    persons = [store.Tag(name=f"Person{i}", type="person") for i in range(5)]
-    topics = [store.Tag(name=f"Topic{i}", type="topic") for i in range(4)]
-    store.set_meeting_tags(stem, persons + topics, source="manual")
-
-    client = TestClient(create_app())
-    r = client.get("/meetings")
-    assert r.status_code == 200
-    # First 2 persons visible
-    for name in ["Person0", "Person1"]:
-        assert f"\U0001f464 {name}" in r.text
-    # First 1 topic visible
-    assert f"\U0001f3f7 Topic0" in r.text
-    # Overflow toggle with correct count: 5+4 - 3 visible = 6 hidden
-    assert ">+6 more</button>" in r.text
-    # Remaining tags present in the page (inside hidden overflow)
-    for name in ["Person2", "Person3", "Person4", "Topic1", "Topic2", "Topic3"]:
-        assert name in r.text
-    # Overflow marker present + hidden
-    assert 'class="row-tags-overflow" hidden' in r.text
 
 
 def test_meetings_tree_wraps_subdir_in_folder_group(app_with_tree):
     r = app_with_tree.get("/meetings")
     assert r.status_code == 200
-    assert '<details class="folder-group" open>' in r.text
-    assert '<summary class="folder">📁 multiturbo</summary>' in r.text
-    assert '<summary class="folder">📁 check-in</summary>' in r.text
+    assert '<details class="folder-group" data-folder-path="multiturbo" open>' in r.text
+    assert '<details class="folder-group" data-folder-path="check-in" open>' in r.text
+    assert '<span class="folder-name">multiturbo</span>' in r.text
+    assert '<span class="folder-name">check-in</span>' in r.text
 
 
 def test_meeting_detail_resolves_by_stem_from_nested_subdir(app_with_tree):
