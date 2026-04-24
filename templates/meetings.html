@@ -5,7 +5,7 @@
   {% for n in known_names_all %}<option value="{{ n }}">{% endfor %}
 </datalist>
 <section class="meetings-page">
-  {% include "_meeting_tree.html" %}
+  {% include "_meeting_tree_partial.html" %}
   {% if meeting %}
     {% include "_meeting_detail.html" %}
   {% else %}
