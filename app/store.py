@@ -55,6 +55,18 @@ def init_schema() -> None:
 
         CREATE INDEX IF NOT EXISTS meeting_tags_by_tag ON meeting_tags(tag_name, tag_type);
 
+        CREATE TABLE IF NOT EXISTS dismissed_clips (
+          source_stem     TEXT NOT NULL,
+          timestamp_text  TEXT NOT NULL,
+          created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (source_stem, timestamp_text)
+        );
+
+        CREATE TABLE IF NOT EXISTS dismissed_inbox_stems (
+          stem        TEXT PRIMARY KEY,
+          created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
         CREATE VIRTUAL TABLE IF NOT EXISTS meetings_fts USING fts5(
           stem, subdir, kind, body,
           tokenize='unicode61 remove_diacritics 2'
@@ -156,6 +168,43 @@ def list_meeting_tags(stem: str) -> list[Tag]:
             (stem,),
         ).fetchall()
     return [Tag(name=r["tag_name"], type=r["tag_type"]) for r in rows]
+
+
+def add_dismissed_clip(source_stem: str, timestamp_text: str) -> None:
+    with connect() as c:
+        c.execute(
+            "INSERT OR IGNORE INTO dismissed_clips (source_stem, timestamp_text) VALUES (?, ?)",
+            (source_stem, timestamp_text),
+        )
+
+
+def list_dismissed_clip_keys() -> set[tuple[str, str]]:
+    try:
+        with connect() as c:
+            rows = c.execute(
+                "SELECT source_stem, timestamp_text FROM dismissed_clips"
+            ).fetchall()
+    except sqlite3.OperationalError:
+        # Schema not initialized (e.g. isolated fs-only test). No dismissals.
+        return set()
+    return {(r["source_stem"], r["timestamp_text"]) for r in rows}
+
+
+def add_dismissed_inbox_stem(stem: str) -> None:
+    with connect() as c:
+        c.execute(
+            "INSERT OR IGNORE INTO dismissed_inbox_stems (stem) VALUES (?)",
+            (stem,),
+        )
+
+
+def list_dismissed_inbox_stems() -> set[str]:
+    try:
+        with connect() as c:
+            rows = c.execute("SELECT stem FROM dismissed_inbox_stems").fetchall()
+    except sqlite3.OperationalError:
+        return set()
+    return {r["stem"] for r in rows}
 
 
 def list_stems_with_tag(tag_name: str, tag_type: str) -> list[str]:

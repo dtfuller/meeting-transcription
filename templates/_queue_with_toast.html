@@ -1,8 +1,39 @@
+{% if rematch_toast is defined and rematch_toast %}
+<div class="toast toast-flash" data-dismiss-ms="6000" role="status">
+  <span>
+    Matched {{ rematch_toast.matched }} clip(s){% if rematch_toast.names %}
+    ({{ rematch_toast.names|join(', ') }}){% endif %}.
+    {{ rematch_toast.still_unknown }} still unknown.
+  </span>
+  <button type="button" class="toast-close" aria-label="Dismiss">×</button>
+</div>
+{% endif %}
+{% if unknown_meetings_count %}
+<div class="speakers-toolbar">
+  <span class="toolbar-count">
+    <strong>{{ unknown_meetings_count }}</strong>
+    meeting{{ 's' if unknown_meetings_count != 1 else '' }}
+    still {{ 'have' if unknown_meetings_count != 1 else 'has' }} unknown speakers.
+  </span>
+  <div class="toolbar-actions">
+    <form hx-post="/speakers/rematch-queue" hx-target="body" hx-swap="outerHTML">
+      <button type="submit" class="toolbar-action-light"
+              title="Embed each queued clip and match against current known-names/to-use/ clips. No video re-processing.">⚡ Rematch queue</button>
+    </form>
+    <form hx-post="/speakers/reclassify" hx-target="body" hx-swap="outerHTML"
+          hx-confirm="Re-run speaker identification across every meeting with unknown speakers, using the current known-names/to-use/ clips?">
+      <button type="submit" class="toolbar-action">↻ Reclassify all</button>
+    </form>
+  </div>
+</div>
+{% endif %}
 <div class="speakers-queue">
   {% if clips %}
+    {% include "_pagination.html" %}
     {% for clip in clips %}
       {% include "_clip_card.html" %}
     {% endfor %}
+    {% include "_pagination.html" %}
   {% else %}
     <p class="subtitle">No clips awaiting labels. You're all caught up.</p>
   {% endif %}

@@ -1,18 +1,43 @@
 {% extends "base.html" %}
 {% block title %}Inbox — Transcribe{% endblock %}
 {% block content %}
+<datalist id="known-names">
+  {% for n in known_names_all %}<option value="{{ n }}">{% endfor %}
+</datalist>
 <section class="inbox-page">
+  {% if applied_meeting %}
+  <div class="toast toast-flash" data-dismiss-ms="6000" role="status">
+    <span>Meeting <a href="{{ applied_meeting.url }}">{{ applied_meeting.stem }}</a>
+      saved to <strong>{{ applied_meeting.subdir }}</strong>.</span>
+    <button type="button" class="toast-close" aria-label="Dismiss">×</button>
+  </div>
+  {% endif %}
+
   {% if not watcher_enabled %}
   <div class="banner">
     Watcher disabled. Set <code>WATCH_DIR</code> in <code>.env</code> and restart the server to enable auto-ingestion.
   </div>
   {% endif %}
 
-  {% if proposals %}
-    {% for p in proposals %}
-      {% set proposal = p %}
+  {% if total_count %}
+    <div class="inbox-filter">
+      <a class="filter-pill {% if not inbox_filter %}active{% endif %}" href="/inbox">All ({{ total_count }})</a>
+      <a class="filter-pill {% if inbox_filter == 'ok' %}active{% endif %}" href="/inbox?filter=ok">Finished OK ({{ ok_count }})</a>
+      <a class="filter-pill pill-error {% if inbox_filter == 'error' %}active{% endif %}" href="/inbox?filter=error">Errored ({{ error_count }})</a>
+    </div>
+  {% endif %}
+
+  {% if items %}
+    {% include "_pagination.html" %}
+    {% for item in items %}
+      {% set proposal = item.proposal %}
       {% include "_inbox_card.html" %}
     {% endfor %}
+    {% include "_pagination.html" %}
+  {% elif inbox_filter == 'ok' %}
+    <p class="subtitle">Nothing here yet. Switch to "All" to see proposals still in flight.</p>
+  {% elif inbox_filter == 'error' %}
+    <p class="subtitle">No errored proposals. Everything processed cleanly.</p>
   {% else %}
     <p class="subtitle">Inbox is empty. New recordings in <code>WATCH_DIR</code> will land here.</p>
   {% endif %}

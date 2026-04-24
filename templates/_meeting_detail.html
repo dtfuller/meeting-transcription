@@ -1,33 +1,41 @@
 <section class="detail">
+  {% if meeting.subdir %}
+    <div class="crumbs">
+      {% set parts = meeting.subdir.split("/") %}
+      {% for p in parts %}<span>{{ p }}</span>{% if not loop.last %} / {% endif %}{% endfor %}
+    </div>
+  {% endif %}
   <header class="detail-head">
     <h2>{{ meeting.stem }}</h2>
     <div class="actions">
       {% if prev_meeting %}
-        <a class="mini-btn" href="/meetings/{{ prev_meeting.subdir|urlencode }}/{{ prev_meeting.stem|urlencode }}?view={{ view }}">← Prev</a>
+        <a class="mini-btn" href="/meetings/{{ prev_meeting.stem|urlencode }}?view={{ view }}">← Prev</a>
       {% else %}
         <span class="mini-btn disabled">← Prev</span>
       {% endif %}
       {% if next_meeting %}
-        <a class="mini-btn" href="/meetings/{{ next_meeting.subdir|urlencode }}/{{ next_meeting.stem|urlencode }}?view={{ view }}">Next →</a>
+        <a class="mini-btn" href="/meetings/{{ next_meeting.stem|urlencode }}?view={{ view }}">Next →</a>
       {% else %}
         <span class="mini-btn disabled">Next →</span>
       {% endif %}
-      <a class="mini-btn" href="/video/meeting/{{ meeting.subdir|urlencode }}/{{ meeting.stem|urlencode }}" target="_blank">▶ Open video</a>
-      <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/reextract" style="display:inline;">
+      <a class="mini-btn" href="/video/meeting/{{ meeting.stem|urlencode }}" target="_blank">▶ Open video</a>
+      <form method="post" action="/meetings/{{ meeting.stem|urlencode }}/reextract" style="display:inline;">
         <button class="mini-btn" type="submit" {% if not meeting.has_transcript %}disabled{% endif %}>↻ Re-extract</button>
       </form>
-      <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/reclassify" style="display:inline;">
+      <form method="post" action="/meetings/{{ meeting.stem|urlencode }}/reclassify" style="display:inline;">
         <button class="mini-btn" type="submit">🔄 Reclassify</button>
       </form>
+      <button type="button" id="suggest-tags-btn" class="mini-btn"
+              data-url="/meetings/{{ meeting.stem|urlencode }}/suggest-tags">🏷 Suggest tags</button>
     </div>
   </header>
   <nav class="subtabs">
     <a class="subtab {% if view == 'knowledge' %}active{% endif %}"
-       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=knowledge">Knowledge</a>
+       href="/meetings/{{ meeting.stem|urlencode }}?view=knowledge">Knowledge</a>
     <a class="subtab {% if view == 'commitments' %}active{% endif %}"
-       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=commitments">Commitments</a>
+       href="/meetings/{{ meeting.stem|urlencode }}?view=commitments">Commitments</a>
     <a class="subtab {% if view == 'transcript' %}active{% endif %}"
-       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=transcript">Transcript</a>
+       href="/meetings/{{ meeting.stem|urlencode }}?view=transcript">Transcript</a>
   </nav>
   <div class="meeting-tags">
     <span class="label">Tags</span>
@@ -39,9 +47,17 @@
       <span class="subtitle">no tags</span>
     {% endif %}
   </div>
+  {% if unknown_clips %}
+  <details class="preview-section" open>
+    <summary>👤 Unknown Speakers <span class="status status-transcribing">{{ unknown_clips|length }}</span></summary>
+    {% set stem = meeting.stem %}
+    {% set clips = unknown_clips %}
+    {% include "_unknown_speakers_inline.html" %}
+  </details>
+  {% endif %}
   <details class="tag-edit">
     <summary>Edit tags</summary>
-    <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/tags">
+    <form method="post" action="/meetings/{{ meeting.stem|urlencode }}/tags">
       <div class="tag-edit-rows">
         {% for t in meeting_tags %}
           <div class="tag-edit-row">
@@ -75,3 +91,51 @@
     {% endif %}
   </div>
 </section>
+<script>
+  (function () {
+    const btn = document.getElementById('suggest-tags-btn');
+    if (!btn) return;
+    btn.addEventListener('click', async function () {
+      btn.disabled = true;
+      const prevLabel = btn.textContent;
+      btn.textContent = '🏷 Thinking…';
+      try {
+        const r = await fetch(btn.dataset.url, { method: 'POST' });
+        if (!r.ok) {
+          btn.textContent = '🏷 Failed';
+          return;
+        }
+        const data = await r.json();
+        const rows = document.querySelector('.tag-edit-rows');
+        if (!rows || !data.tags) return;
+        for (const t of data.tags) {
+          const div = document.createElement('div');
+          div.className = 'tag-edit-row';
+          const name = document.createElement('input');
+          name.name = 'tag_name';
+          name.value = t.name;
+          const sel = document.createElement('select');
+          sel.name = 'tag_type';
+          for (const opt of ['person', 'topic', 'project']) {
+            const o = document.createElement('option');
+            o.value = opt;
+            o.textContent = opt;
+            if (t.type === opt) o.selected = true;
+            sel.appendChild(o);
+          }
+          div.appendChild(name);
+          div.appendChild(sel);
+          rows.appendChild(div);
+        }
+        // Open the disclosure so the user sees the new rows
+        const details = document.querySelector('.tag-edit');
+        if (details) details.open = true;
+        btn.textContent = '🏷 Done — review + Save';
+      } catch (e) {
+        btn.textContent = '🏷 Failed';
+      } finally {
+        setTimeout(function () { btn.disabled = false; btn.textContent = prevLabel; }, 3000);
+      }
+    });
+  })();
+</script>

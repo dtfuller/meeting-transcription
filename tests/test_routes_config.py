@@ -57,3 +57,11 @@ def test_post_config_rejects_nonexistent_path(client):
                     data={"watch_dir": "/tmp/definitely-does-not-exist-12345"},
                     follow_redirects=False)
     assert r.status_code == 400
+
+
+def test_config_page_prefills_from_env_when_ui_json_absent(client, monkeypatch):
+    # No ui.json save; only env var set
+    monkeypatch.setenv("WATCH_DIR", "/from/env/only")
+    r = client.get("/config")
+    assert r.status_code == 200
+    assert 'value="/from/env/only"' in r.text

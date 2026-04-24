@@ -109,3 +109,110 @@ def test_concurrent_ingest_queues_second_file(tmp_path, monkeypatch):
 
     assert store.get_proposal("a").status == "ready"
     assert store.get_proposal("b").status == "ready"
+
+
+def test_scan_existing_sends_unknown_files_to_ingest(tmp_path):
+    external = tmp_path / "external"
+    external.mkdir()
+    _write_mov(external / "new-a.mov")
+    _write_mov(external / "new-b.mov")
+
+    sent: list[Path] = []
+    # Bypass the real pipeline kickoff; just capture the calls
+    original = ingest.get_coordinator().on_new_file
+    ingest.get_coordinator().on_new_file = lambda p: sent.append(p)
+    try:
+        n = ingest.scan_existing(external)
+    finally:
+        ingest.get_coordinator().on_new_file = original
+
+    assert n == 2
+    names = sorted(p.name for p in sent)
+    assert names == ["new-a.mov", "new-b.mov"]
+
+
+def test_scan_existing_skips_already_known_stems(tmp_path):
+    external = tmp_path / "external"
+    external.mkdir()
+    _write_mov(external / "2026-04-14 17-00-43.mov")  # stem matches sample_assets
+    _write_mov(external / "fresh.mov")
+
+    sent: list[Path] = []
+    original = ingest.get_coordinator().on_new_file
+    ingest.get_coordinator().on_new_file = lambda p: sent.append(p)
+    try:
+        n = ingest.scan_existing(external)
+    finally:
+        ingest.get_coordinator().on_new_file = original
+
+    # Only "fresh" should pass through; the 04-14 meeting is already in the
+    # sample tree.
+    assert n == 1
+    assert sent[0].name == "fresh.mov"
+
+
+def test_on_new_file_skips_blocklisted_stem(tmp_path):
+    store.add_dismissed_inbox_stem("blocked")
+    src = tmp_path / "external" / "blocked.mov"
+    _write_mov(src)
+
+    ingest.get_coordinator().on_new_file(src)
+
+    # No copy and no proposal row should have been created.
+    assert not (fs.DATA_DIR / "_inbox" / "blocked.mov").exists()
+    assert store.get_proposal("blocked") is None
+
+
+def test_enqueue_existing_skips_blocklisted_stem(tmp_path):
+    store.add_dismissed_inbox_stem("blocked2")
+    inbox_dir = fs.DATA_DIR / "_inbox"
+    inbox_path = inbox_dir / "blocked2.mov"
+    _write_mov(inbox_path)
+
+    ingest.get_coordinator().enqueue_existing(inbox_path, "blocked2")
+
+    coord = ingest.get_coordinator()
+    assert coord._in_flight_stem is None
+    assert not any(s == "blocked2" for _, s in coord._queue)
+
+
+def test_reconcile_stuck_proposals_reenqueues_transcribing_rows(tmp_path):
+    # Simulate: a proposal stuck in 'transcribing' whose file still lives in _inbox.
+    inbox_dir = fs.DATA_DIR / "_inbox"
+    stem = "orphan-meeting"
+    _write_mov(inbox_dir / f"{stem}.mov")
+    store.save_proposal(
+        stem=stem,
+        proposed_subdir="",
+        proposed_tags=[],
+        status="transcribing",
+        error_message=None,
+    )
+    # Another stuck proposal whose file is GONE — should be skipped.
+    store.save_proposal(
+        stem="ghost",
+        proposed_subdir="",
+        proposed_tags=[],
+        status="analyzing",
+        error_message=None,
+    )
+    # A 'ready' proposal — should be ignored.
+    _write_mov(inbox_dir / "done.mov")
+    store.save_proposal(
+        stem="done",
+        proposed_subdir="",
+        proposed_tags=[],
+        status="ready",
+        error_message=None,
+    )
+
+    n = ingest.reconcile_stuck_proposals()
+    assert n == 1
+
+    # The pipeline should have been kicked for the orphan; wait for completion.
+    for _ in range(200):
+        if not pipeline.get_runner().is_running():
+            break
+        time.sleep(0.05)
+    # The in-flight stem is cleared once done.
+    assert ingest.get_coordinator()._in_flight_stem is None

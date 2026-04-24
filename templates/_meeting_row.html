@@ -1,17 +1,29 @@
 <li>
-  <a href="/meetings/{{ m.subdir|urlencode }}/{{ m.stem|urlencode }}"
+  <a href="/meetings/{{ m.stem|urlencode }}"
      class="{% if selected and selected.subdir == m.subdir and selected.stem == m.stem %}hl{% endif %}">
     {{ m.stem }}
     {% if m.unknown_count %}<span class="badge">{{ m.unknown_count }}</span>{% endif %}
   </a>
-  {% set tags = tags_by_stem.get(m.stem, []) %}
-  {% if tags %}
+  {% set split = tag_split_by_stem.get(m.stem, {"visible": [], "hidden": []}) %}
+  {% if split.visible or split.hidden %}
     <div class="row-tags">
-      {% for t in tags %}
+      {% for t in split.visible %}
         <a class="tag tag-{{ t.type }}"
+           title="{{ t.name }}"
            href="/meetings?tag={{ t.name|urlencode }}&amp;tag_type={{ t.type }}"
            >{{ {"person":"👤","topic":"🏷","project":"📁"}[t.type] }} {{ t.name }}</a>
       {% endfor %}
+      {% if split.hidden %}
+        <button type="button" class="more-toggle" aria-expanded="false">+{{ split.hidden|length }} more</button>
+        <span class="row-tags-overflow" hidden>
+          {% for t in split.hidden %}
+            <a class="tag tag-{{ t.type }}"
+               title="{{ t.name }}"
+               href="/meetings?tag={{ t.name|urlencode }}&amp;tag_type={{ t.type }}"
+               >{{ {"person":"👤","topic":"🏷","project":"📁"}[t.type] }} {{ t.name }}</a>
+          {% endfor %}
+        </span>
+      {% endif %}
     </div>
   {% endif %}
 </li>

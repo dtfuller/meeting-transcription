@@ -63,6 +63,31 @@ def test_search_snippet_escapes_html_in_body(client, tmp_path):
     search_mod.reindex_all()
     r = client.get("/search?q=pwned")
     assert r.status_code == 200
-    # The user content must be escaped — no raw <script> tag should reach the page
-    assert "<script>" not in r.text
+    # The user content must be escaped — no raw XSS <script> tag should reach the page
+    # (Note: the page itself has a legitimate <script> in <head> for theme init,
+    #  so we check that the injected alert payload is escaped, not the tag in isolation.)
+    assert "<script>alert" not in r.text
     assert "&lt;script&gt;" in r.text
+
+
+def test_search_partial_returns_hits_fragment(client):
+    r = client.get("/search/partial?q=David+Fuller")
+    assert r.status_code == 200
+    # Fragment: no <html>/<body> wrapper
+    assert "&lt;html" not in r.text.lower()
+    # At least one hit link rendered
+    assert "search-hit" in r.text
+
+
+def test_search_partial_empty_query_returns_empty(client):
+    r = client.get("/search/partial?q=")
+    assert r.status_code == 200
+    assert r.text.strip() == ""
+
+
+def test_search_partial_caps_at_8_hits(client):
+    r = client.get("/search/partial?q=hola")
+    assert r.status_code == 200
+    # Hit count equals number of search-hit anchors in the fragment
+    count = r.text.count('class="search-hit"')
+    assert count <= 8

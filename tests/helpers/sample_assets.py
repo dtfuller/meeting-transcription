@@ -45,3 +45,17 @@ def build_sample_tree(root: Path) -> None:
     to_classify.mkdir(parents=True)
     (to_classify / "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov").write_bytes(b"\x00")
     (to_classify / "Unknown Speaker 2 - 2026-04-16 17-01-16 - 03m22s.mov").write_bytes(b"\x00")
+
+
+def build_nested_sample_tree(root: Path) -> None:
+    """Builds on build_sample_tree with a 2-deep nested meeting."""
+    build_sample_tree(root)
+    data = root / "data" / "Clients" / "Acme"
+    transcripts = root / "transcripts" / "Clients" / "Acme"
+    information = root / "information" / "Clients" / "Acme"
+    data.mkdir(parents=True, exist_ok=True)
+    (data / "2026-04-20 09-00-00.mov").write_bytes(b"\x00" * 16)
+    write(transcripts / "2026-04-20 09-00-00.txt",
+          "[00:00:00 Alice] hello from Acme\n")
+    write(information / "2026-04-20 09-00-00-knowledge.md", "# K\n")
+    write(information / "2026-04-20 09-00-00-commitments.md", "# C\n")

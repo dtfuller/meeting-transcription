@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import uvicorn
@@ -7,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import config_store, ingest, store, watcher
+from app import config_store, fs, ingest, store, watcher
 
 ROOT = Path(__file__).parent
 
@@ -16,11 +15,7 @@ load_dotenv()
 
 def resolve_watch_dir() -> str | None:
     """ui.json takes precedence; fall back to the WATCH_DIR env var."""
-    from_config = config_store.get("watch_dir")
-    if from_config:
-        return from_config
-    from_env = os.getenv("WATCH_DIR")
-    return from_env or None
+    return config_store.watch_dir()
 
 
 def create_app() -> FastAPI:
@@ -28,8 +23,9 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 
     store.init_schema()
+    fs.assert_stem_uniqueness_or_warn()
 
-    from app.routes import meetings, speakers, pipeline_routes, media, inbox, config_routes, search_routes
+    from app.routes import meetings, speakers, pipeline_routes, media, inbox, config_routes, search_routes, folders
     app.include_router(meetings.router)
     app.include_router(speakers.router)
     app.include_router(pipeline_routes.router)
@@ -37,6 +33,7 @@ def create_app() -> FastAPI:
     app.include_router(inbox.router)
     app.include_router(config_routes.router)
     app.include_router(search_routes.router)
+    app.include_router(folders.router)
 
     from app import search as search_mod
     if search_mod.row_count() == 0:
@@ -47,11 +44,24 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def _start_watcher():
+        # Always reconcile orphaned proposals — independent of WATCH_DIR.
+        import threading
+        threading.Thread(
+            target=ingest.reconcile_stuck_proposals,
+            daemon=True,
+        ).start()
+
         watch_dir = resolve_watch_dir()
         if not watch_dir:
             return
         w = watcher.get_shared()
         w.start(Path(watch_dir), ingest.get_coordinator().on_new_file)
+        # Scan pre-existing files in a daemon thread so startup stays snappy.
+        threading.Thread(
+            target=ingest.scan_existing,
+            args=(Path(watch_dir),),
+            daemon=True,
+        ).start()
 
     @app.on_event("shutdown")
     def _stop_watcher():

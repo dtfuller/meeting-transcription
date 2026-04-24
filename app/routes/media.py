@@ -5,9 +5,9 @@ from app import fs, video
 router = APIRouter()
 
 
-@router.get("/video/meeting/{subdir}/{stem}")
-def stream_meeting(subdir: str, stem: str, request: Request):
-    m = fs.find_meeting(subdir, stem)
+@router.get("/video/meeting/{stem}")
+def stream_meeting(stem: str, request: Request):
+    m = fs.find_meeting_by_stem(stem)
     if m is None:
         raise HTTPException(status_code=404)
     return video.serve(m.mov_path, request.headers.get("range"))

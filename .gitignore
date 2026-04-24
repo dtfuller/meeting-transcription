@@ -28,3 +28,7 @@ tmp/
 ui.db
 ui.db-journal
 ui.json
+
+# Local screenshot / browser-automation scratch
+/*.png
+.playwright-mcp/

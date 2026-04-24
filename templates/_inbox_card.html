@@ -4,14 +4,20 @@
     <span class="status status-{{ proposal.status }}">{{ proposal.status }}</span>
   </header>
   {% if proposal.status == 'error' %}
-    <p class="error-msg">{{ proposal.error_message }}</p>
+    {% set err_parts = (proposal.error_message or 'pipeline error').split('\n\n', 1) %}
+    <details class="error-msg">
+      <summary>⚠ {{ err_parts[0] }}</summary>
+      {% if err_parts|length > 1 %}<pre>{{ err_parts[1] }}</pre>{% endif %}
+    </details>
   {% endif %}
   <form method="post" action="/inbox/{{ proposal.stem }}/apply" class="inbox-form">
+    <input type="hidden" name="return_filter" value="{{ inbox_filter }}">
+    <input type="hidden" name="return_page" value="{{ page_info.page if page_info else 1 }}">
     <label>
       Subdir:
       <input list="subdirs-{{ proposal.stem }}" name="target_subdir"
              value="{{ proposal.proposed_subdir }}"
-             {% if proposal.status != 'ready' %}disabled{% endif %}>
+             {% if proposal.status in ('transcribing', 'analyzing') %}disabled{% endif %}>
       <datalist id="subdirs-{{ proposal.stem }}">
         {% for s in existing_subdirs %}<option value="{{ s }}">{% endfor %}
       </datalist>
@@ -27,13 +33,63 @@
     </div>
     <div class="inbox-actions">
       <button type="submit"
-              {% if proposal.status != 'ready' %}disabled{% endif %}>Apply</button>
+              {% if proposal.status in ('transcribing', 'analyzing') %}disabled{% endif %}>Apply</button>
+      {% if proposal.status == 'error' %}
+      <button type="submit"
+              formaction="/inbox/{{ proposal.stem }}/retry"
+              formmethod="post"
+              formnovalidate
+              class="retry">↻ Retry</button>
+      {% endif %}
       <button type="submit"
               formaction="/inbox/{{ proposal.stem }}/dismiss"
               formmethod="post"
               formnovalidate
               {% if proposal.status in ('transcribing', 'analyzing') %}disabled{% endif %}
               class="secondary">Dismiss</button>
+      <button type="submit"
+              formaction="/inbox/{{ proposal.stem }}/discard"
+              formmethod="post"
+              formnovalidate
+              {% if proposal.status in ('transcribing', 'analyzing') %}disabled{% endif %}
+              onclick="return confirm('Discard this recording and its transcript, knowledge, and commitments? This cannot be undone.');"
+              class="danger">Discard</button>
     </div>
   </form>
+  <details class="preview-section"><summary>📄 Knowledge</summary>
+    {% if item.knowledge_html %}
+      <article class="md">{{ item.knowledge_html|safe }}</article>
+    {% else %}
+      <p class="subtitle">Waiting for pipeline to finish…</p>
+    {% endif %}
+  </details>
+  <details class="preview-section"><summary>✅ Commitments</summary>
+    {% if item.commitments_html %}
+      <article class="md">{{ item.commitments_html|safe }}</article>
+    {% else %}
+      <p class="subtitle">Waiting for pipeline to finish…</p>
+    {% endif %}
+  </details>
+  <details class="preview-section"><summary>📜 Transcript</summary>
+    {% if item.transcript_html %}
+      <pre class="transcript">{{ item.transcript_html|safe }}</pre>
+    {% else %}
+      <p class="subtitle">Waiting for pipeline to finish…</p>
+    {% endif %}
+  </details>
+  <details class="preview-section"><summary>▶ Video</summary>
+    {% if item.has_video %}
+      <video class="preview-video" controls preload="none"
+             src="/video/meeting/{{ proposal.stem|urlencode }}"></video>
+    {% else %}
+      <p class="subtitle">Video unavailable.</p>
+    {% endif %}
+  </details>
+  <details class="preview-section"
+           {% if item.unknown_clips %}open{% endif %}>
+    <summary>👤 Unknown Speakers{% if item.unknown_clips %} <span class="status status-transcribing">{{ item.unknown_clips|length }}</span>{% endif %}</summary>
+    {% set stem = proposal.stem %}
+    {% set clips = item.unknown_clips %}
+    {% include "_unknown_speakers_inline.html" %}
+  </details>
 </article>

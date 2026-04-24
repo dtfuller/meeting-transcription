@@ -1,0 +1,9 @@
+<aside class="tree" hx-target=".tree" hx-swap="outerHTML">
+  {% if tree_error %}
+  <div class="tree-banner" role="alert" data-dismiss-ms="6000">
+    <span>{{ tree_error }}</span>
+    <button type="button" class="toast-close" aria-label="Dismiss">×</button>
+  </div>
+  {% endif %}
+  {% include "_meeting_tree.html" %}
+</aside>

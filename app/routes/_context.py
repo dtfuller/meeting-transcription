@@ -7,4 +7,5 @@ def nav_counts() -> dict:
         "speakers_count": len(fs.list_unknown_clips()),
         "pipeline_running": pipeline.get_runner().is_running(),
         "inbox_count": len(store.list_pending_proposals()),
+        "known_names_all": fs.list_known_names(),
     }

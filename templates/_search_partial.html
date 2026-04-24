@@ -1,0 +1,10 @@
+{% if hits %}
+  {% for hit in hits %}
+    {% include "_search_hit.html" %}
+  {% endfor %}
+  <a class="search-hit search-hit-more" href="/search?q={{ query|urlencode }}">
+    See all matches for &ldquo;{{ query }}&rdquo; &rarr;
+  </a>
+{% else %}
+  <div class="search-hit search-hit-empty">No matches.</div>
+{% endif %}

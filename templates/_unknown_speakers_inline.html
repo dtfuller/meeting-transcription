@@ -1,0 +1,25 @@
+<div class="unknown-speakers-inline" data-stem="{{ stem }}">
+  {% if clips %}
+    {% for clip in clips %}
+      <article class="speaker-inline-card">
+        <video class="speaker-inline-video" controls preload="metadata"
+               src="/video/clip/{{ clip.filename|urlencode }}#t=0.1"></video>
+        <form class="speaker-inline-form"
+              hx-post="/speakers/label-inline"
+              hx-target="closest .unknown-speakers-inline"
+              hx-swap="outerHTML">
+          <input type="hidden" name="filename" value="{{ clip.filename }}">
+          <input type="hidden" name="stem" value="{{ stem }}">
+          <div class="speaker-inline-meta">
+            <span class="speaker-inline-label">{{ clip.raw_label }}</span>
+            <span class="speaker-inline-ts">@ {{ clip.timestamp_text }}</span>
+          </div>
+          <input name="name" list="known-names" placeholder="Who is this?" autocomplete="off" required>
+          <button type="submit">Save</button>
+        </form>
+      </article>
+    {% endfor %}
+  {% else %}
+    <p class="subtitle">All speakers identified.</p>
+  {% endif %}
+</div>

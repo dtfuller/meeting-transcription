@@ -41,3 +41,25 @@ def test_get_returns_default_when_key_missing():
 def test_get_returns_stored_value():
     config_store.save({"watch_dir": "/x"})
     assert config_store.get("watch_dir") == "/x"
+
+
+def test_watch_dir_returns_config_value_when_set(monkeypatch):
+    config_store.save({"watch_dir": "/from/config"})
+    monkeypatch.delenv("WATCH_DIR", raising=False)
+    assert config_store.watch_dir() == "/from/config"
+
+
+def test_watch_dir_falls_back_to_env_when_config_missing(monkeypatch):
+    monkeypatch.setenv("WATCH_DIR", "/from/env")
+    assert config_store.watch_dir() == "/from/env"
+
+
+def test_watch_dir_config_wins_over_env(monkeypatch):
+    config_store.save({"watch_dir": "/from/config"})
+    monkeypatch.setenv("WATCH_DIR", "/from/env")
+    assert config_store.watch_dir() == "/from/config"
+
+
+def test_watch_dir_returns_none_when_neither_set(monkeypatch):
+    monkeypatch.delenv("WATCH_DIR", raising=False)
+    assert config_store.watch_dir() is None

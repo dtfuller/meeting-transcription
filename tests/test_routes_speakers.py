@@ -37,6 +37,16 @@ def test_speakers_count_in_nav(client):
     assert '<span class="count">2</span>' in r.text
 
 
+def test_speakers_shows_persistent_reclassify_toolbar(client):
+    r = client.get("/speakers")
+    assert r.status_code == 200
+    assert 'class="speakers-toolbar"' in r.text
+    assert "Reclassify all" in r.text
+    assert 'hx-post="/speakers/reclassify"' in r.text
+    # Confirm dialog is attached so a user doesn't fire it by accident.
+    assert "hx-confirm=" in r.text
+
+
 from app import clips
 
 
@@ -110,3 +120,166 @@ def test_reclassify_resets_labels_counter_on_success(client, monkeypatch):
         time.sleep(0.05)
     assert pipeline.get_runner().last_return_code == 0
     assert clips.labels_since_reset() == 0
+
+
+def test_post_discard_removes_clip_and_persists_blocklist(client, tmp_path):
+    from app import store
+    # Precondition: clip exists on disk and in the queue.
+    clip_path = tmp_path / "known-names" / "to-classify" / \
+        "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov"
+    assert clip_path.exists()
+
+    r = client.post(
+        "/speakers/discard",
+        data={
+            "filename": "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov",
+            "source_stem": "2026-04-16 17-01-16",
+            "timestamp_text": "01m08s",
+        },
+    )
+    assert r.status_code == 200
+    # File removed from disk
+    assert not clip_path.exists()
+    # Blocklist row inserted
+    assert ("2026-04-16 17-01-16", "01m08s") in store.list_dismissed_clip_keys()
+    # The queue fragment no longer lists the discarded clip
+    assert "01m08s" not in r.text
+
+
+def test_discarded_clip_stays_hidden_even_if_file_reappears(client, tmp_path):
+    from app import fs, store
+    # First discard the clip
+    filename = "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov"
+    client.post(
+        "/speakers/discard",
+        data={
+            "filename": filename,
+            "source_stem": "2026-04-16 17-01-16",
+            "timestamp_text": "01m08s",
+        },
+    )
+    # Simulate --reclassify regenerating the same clip
+    (tmp_path / "known-names" / "to-classify" / filename).write_bytes(b"\x00" * 16)
+    # list_unknown_clips filters it out
+    names = [c.filename for c in fs.list_unknown_clips()]
+    assert filename not in names
+
+
+def test_label_patches_source_transcript(client, tmp_path):
+    transcript = (tmp_path / "transcripts" / "multiturbo"
+                  / "2026-04-16 17-01-16.txt")
+    assert "Unknown Speaker 1" in transcript.read_text(encoding="utf-8")
+    r = client.post(
+        "/speakers/label",
+        data={
+            "filename": "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov",
+            "name": "Alejandra Gomez",
+        },
+    )
+    assert r.status_code == 200
+    after = transcript.read_text(encoding="utf-8")
+    assert "Unknown Speaker 1" not in after
+    assert "[00:01:08 Alejandra Gomez]" in after
+
+
+def test_label_inline_patches_source_transcript(client, tmp_path):
+    transcript = (tmp_path / "transcripts" / "multiturbo"
+                  / "2026-04-16 17-01-16.txt")
+    r = client.post(
+        "/speakers/label-inline",
+        data={
+            "filename": "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov",
+            "name": "Alejandra Gomez",
+            "stem": "2026-04-16 17-01-16",
+        },
+    )
+    assert r.status_code == 200
+    after = transcript.read_text(encoding="utf-8")
+    assert "Unknown Speaker 1" not in after
+    assert "[00:01:08 Alejandra Gomez]" in after
+
+
+def test_rematch_queue_renders_toast_on_match(client, monkeypatch):
+    from app import reidentify
+    monkeypatch.setattr(
+        reidentify, "rematch_unknown_clips",
+        lambda: reidentify.RematchResult(
+            matched=[("a.mov", "Alice"), ("b.mov", "Bob")],
+            unmatched=["c.mov"],
+        ),
+    )
+    r = client.post("/speakers/rematch-queue")
+    assert r.status_code == 200
+    assert "Matched 2 clip(s)" in r.text
+    assert "Alice" in r.text and "Bob" in r.text
+    assert "1 still unknown" in r.text
+    # The Rematch button is still present for another pass.
+    assert 'hx-post="/speakers/rematch-queue"' in r.text
+
+
+def test_rematch_queue_toast_when_nothing_matched(client, monkeypatch):
+    from app import reidentify
+    monkeypatch.setattr(
+        reidentify, "rematch_unknown_clips",
+        lambda: reidentify.RematchResult(matched=[], unmatched=["a.mov"]),
+    )
+    r = client.post("/speakers/rematch-queue")
+    assert r.status_code == 200
+    assert "Matched 0 clip(s)" in r.text
+    assert "1 still unknown" in r.text
+
+
+def test_rematch_queue_end_to_end_patches_transcript(client, tmp_path, monkeypatch):
+    """Full route-level integration using the fake embedding from
+    tests/test_reidentify.py — Unknown Speaker 1 resolves to David Fuller."""
+    import numpy as np
+    from app import reidentify
+
+    def fake_emb(path):
+        key = path.stem.split(" - ")[0]
+        idx = {"David Fuller": 0, "Darwin Henao": 1,
+               "Unknown Speaker 1": 0, "Unknown Speaker 2": 9}.get(key, 8)
+        v = np.zeros(10)
+        v[idx] = 1.0
+        return v
+
+    monkeypatch.setattr(reidentify, "_compute_clip_embedding", fake_emb)
+
+    transcript = (tmp_path / "transcripts" / "multiturbo"
+                  / "2026-04-16 17-01-16.txt")
+    r = client.post("/speakers/rematch-queue")
+    assert r.status_code == 200
+    after = transcript.read_text(encoding="utf-8")
+    assert "Unknown Speaker 1" not in after
+    assert "[00:01:08 David Fuller]" in after
+    assert "Matched 1 clip(s)" in r.text
+    assert "David Fuller" in r.text
+
+
+def test_speakers_toolbar_shows_rematch_button(client):
+    r = client.get("/speakers")
+    assert r.status_code == 200
+    assert "Rematch queue" in r.text
+    assert 'hx-post="/speakers/rematch-queue"' in r.text
+
+
+def test_label_inline_returns_updated_stem_fragment(client, tmp_path):
+    # Fixture has two clips for stem "2026-04-16 17-01-16"
+    r = client.post(
+        "/speakers/label-inline",
+        data={
+            "filename": "Unknown Speaker 1 - 2026-04-16 17-01-16 - 01m08s.mov",
+            "name": "Alejandra Gomez",
+            "stem": "2026-04-16 17-01-16",
+        },
+    )
+    assert r.status_code == 200
+    # The other clip for this stem is still there
+    assert "Unknown Speaker 2" in r.text
+    # The one we labeled is gone
+    assert "Unknown Speaker 1" not in r.text
+    # Fragment is wrapped in the expected outerHTML target container
+    assert 'class="unknown-speakers-inline"' in r.text
+    # File was moved
+    assert (tmp_path / "known-names" / "to-use" /
+            "Alejandra Gomez - 2026-04-16 17-01-16 - 01m08s.mov").exists()

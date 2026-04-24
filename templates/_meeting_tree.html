@@ -1,19 +1,69 @@
-<aside class="tree">
-  {% for block in meeting_blocks %}
-    <div class="folder">📁 {{ block.subdir }}</div>
-    {% if block.is_grouped %}
-      {% for month in block.months %}
-        <details class="month-group"{% if month.open %} open{% endif %}>
-          <summary>📅 {{ month.label }} <span class="month-count">({{ month.meetings|length }})</span></summary>
-          <ul>
-            {% for m in month.meetings %}{% include "_meeting_row.html" %}{% endfor %}
-          </ul>
-        </details>
+{% macro render_node(node) %}
+  {% if node.path %}
+  <details class="folder-group" data-folder-path="{{ node.path }}" open>
+    <summary class="folder"
+             data-move-kind="folder"
+             data-move-id="{{ node.path }}"
+             draggable="true">
+      <span class="folder-name">{{ node.name }}</span>
+      <span class="folder-actions">
+        <button type="button" class="fi fi-new" title="New subfolder"
+                data-action="create"
+                data-folder-path="{{ node.path }}">➕</button>
+        <button type="button" class="fi fi-rename" title="Rename"
+                data-action="rename"
+                data-folder-path="{{ node.path }}"
+                data-folder-name="{{ node.name }}">✏️</button>
+        <button type="button" class="fi fi-del" title="Delete"
+                hx-post="/folders/delete"
+                hx-target=".tree" hx-swap="outerHTML"
+                hx-confirm="Delete folder '{{ node.path }}'?"
+                hx-vals='{"path": {{ node.path|tojson }}}'>🗑</button>
+      </span>
+    </summary>
+  {% endif %}
+    <ul class="tree-children">
+      {% for sub in node.subfolders %}
+        <li>{{ render_node(sub) }}</li>
       {% endfor %}
-    {% else %}
-      <ul>
-        {% for m in block.flat %}{% include "_meeting_row.html" %}{% endfor %}
-      </ul>
-    {% endif %}
+      {% for m in node.meetings %}
+        <li class="tree-leaf"
+            data-move-kind="meeting"
+            data-move-id="{{ m.stem }}"
+            draggable="true">
+          <a href="/meetings/{{ m.stem|urlencode }}"
+             class="{% if active_stem == m.stem %}hl{% endif %}"
+             >{{ m.stem }}</a>
+          {% if m.unknown_count %}<span class="badge">{{ m.unknown_count }}</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% if node.path %}
+  </details>
+  {% endif %}
+{% endmacro %}
+
+<div class="tree-toolbar">
+  <form hx-post="/folders/create" hx-target=".tree" hx-swap="outerHTML"
+        class="new-folder-form">
+    <input type="hidden" name="parent_path" value="">
+    <input type="text" name="name" placeholder="+ New folder" class="new-folder-input">
+  </form>
+</div>
+
+<ul class="tree-children tree-root-drop">
+  {% for sub in tree.subfolders %}
+    <li>{{ render_node(sub) }}</li>
   {% endfor %}
-</aside>
+  {% for m in tree.meetings %}
+    <li class="tree-leaf"
+        data-move-kind="meeting"
+        data-move-id="{{ m.stem }}"
+        draggable="true">
+      <a href="/meetings/{{ m.stem|urlencode }}"
+         class="{% if active_stem == m.stem %}hl{% endif %}"
+         >{{ m.stem }}</a>
+      {% if m.unknown_count %}<span class="badge">{{ m.unknown_count }}</span>{% endif %}
+    </li>
+  {% endfor %}
+</ul>
