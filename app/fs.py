@@ -66,6 +66,14 @@ class Folder:
     parent: str # parent path ("" for top-level folders)
 
 
+@dataclass
+class TreeNode:
+    path: str
+    name: str
+    subfolders: list["TreeNode"]
+    meetings: list[Meeting]
+
+
 def list_folders() -> list[Folder]:
     """Every directory under DATA_DIR that is not _inbox or inside _inbox."""
     if not DATA_DIR.exists():
@@ -83,6 +91,29 @@ def list_folders() -> list[Folder]:
             parent=str(rel.parent) if rel.parent != Path(".") else "",
         ))
     return folders
+
+
+def build_tree(include_inbox: bool = False) -> TreeNode:
+    """Builds a nested TreeNode matching the on-disk hierarchy.
+
+    The returned node represents root (path="", name=""). Every folder and
+    meeting is placed under its parent path. _inbox is excluded unless
+    include_inbox is True (currently unused by callers — inbox is its own tab).
+    """
+    root = TreeNode(path="", name="", subfolders=[], meetings=[])
+    by_path: dict[str, TreeNode] = {"": root}
+
+    for folder in list_folders():
+        node = TreeNode(path=folder.path, name=folder.name,
+                        subfolders=[], meetings=[])
+        by_path[folder.path] = node
+        by_path.get(folder.parent, root).subfolders.append(node)
+
+    for m in list_meetings(include_inbox=include_inbox):
+        node = by_path.get(m.subdir, root)
+        node.meetings.append(m)
+
+    return root
 
 
 def folder_exists(path: str) -> bool:

@@ -96,3 +96,27 @@ def test_folder_is_empty_false_when_only_subfolder_present(tmp_path, monkeypatch
     monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
     monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
     assert fs.folder_is_empty("Parent") is False
+
+
+def test_build_tree_returns_nested_structure(nested_tree):
+    root = fs.build_tree()
+    # Root is synthetic; its subfolders should include "multiturbo",
+    # "check-in", and "Clients" (all at depth 0).
+    child_names = [sf.name for sf in root.subfolders]
+    assert "Clients" in child_names
+    clients = next(sf for sf in root.subfolders if sf.name == "Clients")
+    assert [sf.name for sf in clients.subfolders] == ["Acme"]
+    # The Acme folder holds the nested meeting.
+    acme = clients.subfolders[0]
+    assert [m.stem for m in acme.meetings] == ["2026-04-20 09-00-00"]
+
+
+def test_build_tree_puts_root_meetings_on_root_node(tmp_path, monkeypatch):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "rootcast.mov").write_bytes(b"\x00")
+    monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
+    monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
+    monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
+    root = fs.build_tree()
+    assert [m.stem for m in root.meetings] == ["rootcast"]
+    assert root.subfolders == []
