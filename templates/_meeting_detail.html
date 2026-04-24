@@ -1,35 +1,41 @@
 <section class="detail">
+  {% if meeting.subdir %}
+    <div class="crumbs">
+      {% set parts = meeting.subdir.split("/") %}
+      {% for p in parts %}<span>{{ p }}</span>{% if not loop.last %} / {% endif %}{% endfor %}
+    </div>
+  {% endif %}
   <header class="detail-head">
     <h2>{{ meeting.stem }}</h2>
     <div class="actions">
       {% if prev_meeting %}
-        <a class="mini-btn" href="/meetings/{{ prev_meeting.subdir|urlencode }}/{{ prev_meeting.stem|urlencode }}?view={{ view }}">← Prev</a>
+        <a class="mini-btn" href="/meetings/{{ prev_meeting.stem|urlencode }}?view={{ view }}">← Prev</a>
       {% else %}
         <span class="mini-btn disabled">← Prev</span>
       {% endif %}
       {% if next_meeting %}
-        <a class="mini-btn" href="/meetings/{{ next_meeting.subdir|urlencode }}/{{ next_meeting.stem|urlencode }}?view={{ view }}">Next →</a>
+        <a class="mini-btn" href="/meetings/{{ next_meeting.stem|urlencode }}?view={{ view }}">Next →</a>
       {% else %}
         <span class="mini-btn disabled">Next →</span>
       {% endif %}
-      <a class="mini-btn" href="/video/meeting/{{ meeting.subdir|urlencode }}/{{ meeting.stem|urlencode }}" target="_blank">▶ Open video</a>
-      <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/reextract" style="display:inline;">
+      <a class="mini-btn" href="/video/meeting/{{ meeting.stem|urlencode }}" target="_blank">▶ Open video</a>
+      <form method="post" action="/meetings/{{ meeting.stem|urlencode }}/reextract" style="display:inline;">
         <button class="mini-btn" type="submit" {% if not meeting.has_transcript %}disabled{% endif %}>↻ Re-extract</button>
       </form>
-      <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/reclassify" style="display:inline;">
+      <form method="post" action="/meetings/{{ meeting.stem|urlencode }}/reclassify" style="display:inline;">
         <button class="mini-btn" type="submit">🔄 Reclassify</button>
       </form>
       <button type="button" id="suggest-tags-btn" class="mini-btn"
-              data-url="/meetings/{{ meeting.subdir|urlencode }}/{{ meeting.stem|urlencode }}/suggest-tags">🏷 Suggest tags</button>
+              data-url="/meetings/{{ meeting.stem|urlencode }}/suggest-tags">🏷 Suggest tags</button>
     </div>
   </header>
   <nav class="subtabs">
     <a class="subtab {% if view == 'knowledge' %}active{% endif %}"
-       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=knowledge">Knowledge</a>
+       href="/meetings/{{ meeting.stem|urlencode }}?view=knowledge">Knowledge</a>
     <a class="subtab {% if view == 'commitments' %}active{% endif %}"
-       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=commitments">Commitments</a>
+       href="/meetings/{{ meeting.stem|urlencode }}?view=commitments">Commitments</a>
     <a class="subtab {% if view == 'transcript' %}active{% endif %}"
-       href="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}?view=transcript">Transcript</a>
+       href="/meetings/{{ meeting.stem|urlencode }}?view=transcript">Transcript</a>
   </nav>
   <div class="meeting-tags">
     <span class="label">Tags</span>
@@ -51,7 +57,7 @@
   {% endif %}
   <details class="tag-edit">
     <summary>Edit tags</summary>
-    <form method="post" action="/meetings/{{ meeting.subdir }}/{{ meeting.stem }}/tags">
+    <form method="post" action="/meetings/{{ meeting.stem|urlencode }}/tags">
       <div class="tag-edit-rows">
         {% for t in meeting_tags %}
           <div class="tag-edit-row">

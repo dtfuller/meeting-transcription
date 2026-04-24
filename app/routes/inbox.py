@@ -93,7 +93,7 @@ def inbox_index(request: Request, page: int = 1,
         applied_meeting = {
             "subdir": applied_subdir,
             "stem": applied_stem,
-            "url": f"/meetings/{quote(applied_subdir)}/{quote(applied_stem)}",
+            "url": f"/meetings/{quote(applied_stem)}",
         }
     return templates.TemplateResponse(
         request,

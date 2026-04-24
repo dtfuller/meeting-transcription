@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app import fs
 from server import create_app
-from tests.helpers.sample_assets import build_sample_tree
+from tests.helpers.sample_assets import build_nested_sample_tree as build_sample_tree
 
 
 @pytest.fixture
@@ -55,24 +55,24 @@ def test_unknown_badge_shown_for_meetings_with_unknown_speakers(app_with_tree):
 
 
 def test_meeting_detail_renders_transcript(app_with_tree):
-    r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43?view=transcript")
+    r = app_with_tree.get("/meetings/2026-04-14 17-00-43?view=transcript")
     assert r.status_code == 200
     assert "David Fuller" in r.text
     assert "hola" in r.text
 
 
 def test_meeting_detail_unknown_404(app_with_tree):
-    r = app_with_tree.get("/meetings/does-not/exist")
+    r = app_with_tree.get("/meetings/does-not-exist")
     assert r.status_code == 404
 
 
 def test_unknown_speaker_highlighted(app_with_tree):
-    r = app_with_tree.get("/meetings/multiturbo/2026-04-16 17-01-16?view=transcript")
+    r = app_with_tree.get("/meetings/2026-04-16 17-01-16?view=transcript")
     assert 'class="unk">Unknown Speaker 1' in r.text
 
 
 def test_knowledge_view_renders_markdown(app_with_tree):
-    r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43?view=knowledge")
+    r = app_with_tree.get("/meetings/2026-04-14 17-00-43?view=knowledge")
     assert "<h1>" in r.text or "<h1 " in r.text
 
 
@@ -93,7 +93,7 @@ def test_post_reextract_starts_runner(app_with_tree, monkeypatch):
     reindexed: list[str] = []
     monkeypatch.setattr(search, "reindex_meeting", lambda stem: reindexed.append(stem))
     r = app_with_tree.post(
-        "/meetings/multiturbo/2026-04-14 17-00-43/reextract",
+        "/meetings/2026-04-14 17-00-43/reextract",
         follow_redirects=False,
     )
     assert r.status_code == 303
@@ -116,7 +116,7 @@ def test_post_reclassify_one_starts_runner(app_with_tree, monkeypatch):
         lambda m: [sys.executable, str(HELPER)],
     )
     r = app_with_tree.post(
-        "/meetings/multiturbo/2026-04-16 17-01-16/reclassify",
+        "/meetings/2026-04-16 17-01-16/reclassify",
         follow_redirects=False,
     )
     assert r.status_code == 303
@@ -127,7 +127,7 @@ def test_post_reclassify_one_starts_runner(app_with_tree, monkeypatch):
 
 
 def test_meeting_detail_shows_tag_section(app_with_tree_with_tags):
-    r = app_with_tree_with_tags.get("/meetings/multiturbo/2026-04-14 17-00-43")
+    r = app_with_tree_with_tags.get("/meetings/2026-04-14 17-00-43")
     assert "Darwin Henao" in r.text
     assert 'class="tag tag-person"' in r.text
 
@@ -142,7 +142,7 @@ def test_meeting_tree_filters_by_tag(app_with_tree_with_tags):
 def test_post_meeting_tags_replaces_tags(app_with_tree_with_tags):
     from app import store
     r = app_with_tree_with_tags.post(
-        "/meetings/multiturbo/2026-04-14 17-00-43/tags",
+        "/meetings/2026-04-14 17-00-43/tags",
         data={"tag_name": ["Maria Lopez", "onboarding"],
               "tag_type": ["person", "topic"]},
         follow_redirects=False,
@@ -154,22 +154,22 @@ def test_post_meeting_tags_replaces_tags(app_with_tree_with_tags):
 
 
 def test_meeting_detail_has_prev_and_next(app_with_tree):
-    # Sorted order: check-in/2026-04-17 → multiturbo/2026-04-14 → multiturbo/2026-04-16
-    # The middle one has both neighbors. URLs are percent-encoded (%20 for space).
-    r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43")
+    # Sorted order across all meetings; middle one must have both neighbors.
+    # URLs are percent-encoded (%20 for space) and stem-only.
+    r = app_with_tree.get("/meetings/2026-04-14 17-00-43")
     assert r.status_code == 200
-    assert "/meetings/check-in/2026-04-17%2009-00-00" in r.text
-    assert "/meetings/multiturbo/2026-04-16%2017-01-16" in r.text
+    assert "/meetings/2026-04-17%2009-00-00" in r.text
+    assert "/meetings/2026-04-16%2017-01-16" in r.text
 
 
 def test_first_meeting_has_no_prev_link(app_with_tree):
-    r = app_with_tree.get("/meetings/check-in/2026-04-17 09-00-00")
+    r = app_with_tree.get("/meetings/2026-04-20 09-00-00")
     assert r.status_code == 200
     assert '<span class="mini-btn disabled">← Prev' in r.text
 
 
 def test_last_meeting_has_no_next_link(app_with_tree):
-    r = app_with_tree.get("/meetings/multiturbo/2026-04-16 17-01-16")
+    r = app_with_tree.get("/meetings/2026-04-16 17-01-16")
     assert r.status_code == 200
     assert '<span class="mini-btn disabled">Next →' in r.text
 
@@ -213,7 +213,7 @@ def test_tree_renders_details_groups_when_subdir_exceeds_threshold(tmp_path, mon
 
 def test_meeting_detail_defaults_to_knowledge_subtab(app_with_tree):
     # Visiting a meeting without ?view= must land on Knowledge, not Transcript.
-    r = app_with_tree.get("/meetings/multiturbo/2026-04-14 17-00-43")
+    r = app_with_tree.get("/meetings/2026-04-14 17-00-43")
     assert r.status_code == 200
 
     def subtab_is_active(label: str) -> bool:
@@ -240,7 +240,7 @@ def test_suggest_tags_returns_proposed_tags(app_with_tree_with_tags, monkeypatch
     monkeypatch.setattr(categorize, "_build_client", lambda: fake)
 
     r = app_with_tree_with_tags.post(
-        "/meetings/multiturbo/2026-04-14 17-00-43/suggest-tags",
+        "/meetings/2026-04-14 17-00-43/suggest-tags",
     )
     assert r.status_code == 200
     data = r.json()
@@ -251,12 +251,12 @@ def test_suggest_tags_returns_proposed_tags(app_with_tree_with_tags, monkeypatch
 
 
 def test_suggest_tags_404_on_unknown_meeting(app_with_tree_with_tags):
-    r = app_with_tree_with_tags.post("/meetings/ghost/missing/suggest-tags")
+    r = app_with_tree_with_tags.post("/meetings/ghost-missing/suggest-tags")
     assert r.status_code == 404
 
 
 def test_suggest_tags_button_rendered_on_detail(app_with_tree_with_tags):
-    r = app_with_tree_with_tags.get("/meetings/multiturbo/2026-04-14 17-00-43")
+    r = app_with_tree_with_tags.get("/meetings/2026-04-14 17-00-43")
     assert r.status_code == 200
     assert "Suggest tags" in r.text
     assert 'id="suggest-tags-btn"' in r.text
@@ -318,3 +318,19 @@ def test_meetings_tree_wraps_subdir_in_folder_group(app_with_tree):
     assert '<details class="folder-group" open>' in r.text
     assert '<summary class="folder">📁 multiturbo</summary>' in r.text
     assert '<summary class="folder">📁 check-in</summary>' in r.text
+
+
+def test_meeting_detail_resolves_by_stem_from_nested_subdir(app_with_tree):
+    r = app_with_tree.get("/meetings/2026-04-20 09-00-00")
+    assert r.status_code == 200
+    assert "Clients" in r.text
+    assert "Acme" in r.text
+
+
+def test_meeting_tags_post_resolves_by_stem(app_with_tree):
+    r = app_with_tree.post(
+        "/meetings/2026-04-14 17-00-43/tags",
+        data={"tag_name": ["topic-x"], "tag_type": ["topic"]},
+        follow_redirects=False,
+    )
+    assert r.status_code in (200, 303)

@@ -138,7 +138,7 @@ def test_inbox_shows_applied_toast_when_query_params_set(client):
     r = client.get("/inbox?applied_subdir=multiturbo&applied_stem=2026-04-14+17-00-43")
     assert r.status_code == 200
     assert 'class="toast toast-flash"' in r.text
-    assert 'href="/meetings/multiturbo/2026-04-14%2017-00-43"' in r.text
+    assert 'href="/meetings/2026-04-14%2017-00-43"' in r.text
     assert "2026-04-14 17-00-43" in r.text
 
 
@@ -217,7 +217,7 @@ def test_inbox_card_renders_knowledge_commitments_transcript_video(client):
     # Transcript content from _seed_proposal
     assert "[00:00:00 X] hi" in r.text
     # Video source points to the _inbox streaming URL
-    assert 'src="/video/meeting/_inbox/preview-stem"' in r.text
+    assert 'src="/video/meeting/preview-stem"' in r.text
     # Previews are collapsed by default (no open attr)
     assert '<details class="preview-section" open>' not in r.text
 

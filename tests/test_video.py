@@ -16,14 +16,14 @@ def client(tmp_path, monkeypatch):
 
 
 def test_meeting_video_200(client):
-    r = client.get("/video/meeting/multiturbo/2026-04-14 17-00-43")
+    r = client.get("/video/meeting/2026-04-14 17-00-43")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("video/")
     assert r.headers.get("accept-ranges") == "bytes"
 
 
 def test_meeting_video_range_206(client):
-    r = client.get("/video/meeting/multiturbo/2026-04-14 17-00-43",
+    r = client.get("/video/meeting/2026-04-14 17-00-43",
                    headers={"Range": "bytes=0-3"})
     assert r.status_code == 206
     assert r.headers["content-range"].startswith("bytes 0-3/")
@@ -31,7 +31,7 @@ def test_meeting_video_range_206(client):
 
 
 def test_meeting_video_404(client):
-    r = client.get("/video/meeting/nope/missing")
+    r = client.get("/video/meeting/nope-missing")
     assert r.status_code == 404
 
 

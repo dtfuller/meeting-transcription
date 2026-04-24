@@ -77,9 +77,9 @@ def meetings_index(request: Request, tag: str | None = None, tag_type: str | Non
     )
 
 
-@router.get("/meetings/{subdir}/{stem}")
-def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowledge"):
-    m = fs.find_meeting(subdir, stem)
+@router.get("/meetings/{stem}")
+def meeting_detail(stem: str, request: Request, view: str = "knowledge"):
+    m = fs.find_meeting_by_stem(stem)
     if m is None:
         raise HTTPException(status_code=404)
     if view not in ("transcript", "knowledge", "commitments"):
@@ -121,9 +121,9 @@ def meeting_detail(subdir: str, stem: str, request: Request, view: str = "knowle
     )
 
 
-@router.post("/meetings/{subdir}/{stem}/reextract")
-def reextract(subdir: str, stem: str):
-    m = fs.find_meeting(subdir, stem)
+@router.post("/meetings/{stem}/reextract")
+def reextract(stem: str):
+    m = fs.find_meeting_by_stem(stem)
     if m is None:
         raise HTTPException(404)
     try:
@@ -136,9 +136,9 @@ def reextract(subdir: str, stem: str):
     return RedirectResponse("/pipeline", status_code=303)
 
 
-@router.post("/meetings/{subdir}/{stem}/reclassify")
-def reclassify_one(subdir: str, stem: str):
-    m = fs.find_meeting(subdir, stem)
+@router.post("/meetings/{stem}/reclassify")
+def reclassify_one(stem: str):
+    m = fs.find_meeting_by_stem(stem)
     if m is None:
         raise HTTPException(404)
     try:
@@ -151,14 +151,13 @@ def reclassify_one(subdir: str, stem: str):
     return RedirectResponse("/pipeline", status_code=303)
 
 
-@router.post("/meetings/{subdir}/{stem}/tags")
+@router.post("/meetings/{stem}/tags")
 def set_tags(
-    subdir: str,
     stem: str,
     tag_name: Annotated[list[str], Form()] = [],
     tag_type: Annotated[list[str], Form()] = [],
 ):
-    if fs.find_meeting(subdir, stem) is None:
+    if fs.find_meeting_by_stem(stem) is None:
         raise HTTPException(status_code=404)
     tags = []
     for n, t in zip(tag_name, tag_type):
@@ -166,12 +165,12 @@ def set_tags(
         if n and t in ("person", "topic", "project"):
             tags.append(store.Tag(name=n, type=t))
     store.set_meeting_tags(stem, tags, source="manual")
-    return RedirectResponse(f"/meetings/{subdir}/{stem}", status_code=303)
+    return RedirectResponse(f"/meetings/{stem}", status_code=303)
 
 
-@router.post("/meetings/{subdir}/{stem}/suggest-tags")
-def suggest_tags(subdir: str, stem: str):
-    m = fs.find_meeting(subdir, stem)
+@router.post("/meetings/{stem}/suggest-tags")
+def suggest_tags(stem: str):
+    m = fs.find_meeting_by_stem(stem)
     if m is None:
         raise HTTPException(status_code=404)
     existing_subdirs = sorted(
