@@ -59,6 +59,56 @@ class Clip:
     timestamp_text: str     # "01m08s"
 
 
+@dataclass(frozen=True)
+class Folder:
+    path: str   # ""=root, "Clients", "Clients/Acme"
+    name: str   # leaf name ("Acme"); "" for root
+    parent: str # parent path ("" for top-level folders)
+
+
+def list_folders() -> list[Folder]:
+    """Every directory under DATA_DIR that is not _inbox or inside _inbox."""
+    if not DATA_DIR.exists():
+        return []
+    folders: list[Folder] = []
+    for p in sorted(DATA_DIR.rglob("*")):
+        if not p.is_dir():
+            continue
+        rel = p.relative_to(DATA_DIR)
+        if rel.parts and rel.parts[0] == "_inbox":
+            continue
+        folders.append(Folder(
+            path=str(rel),
+            name=rel.name,
+            parent=str(rel.parent) if rel.parent != Path(".") else "",
+        ))
+    return folders
+
+
+def folder_exists(path: str) -> bool:
+    """Root ('') is always considered to exist."""
+    if not path:
+        return True
+    return (DATA_DIR / path).is_dir()
+
+
+def folder_is_empty(path: str) -> bool:
+    """True when there are no subfolders (excluding _inbox) and no .mov files
+    anywhere beneath `path`. A missing directory is considered empty."""
+    root = (DATA_DIR / path) if path else DATA_DIR
+    if not root.is_dir():
+        return True
+    for p in root.rglob("*"):
+        rel = p.relative_to(DATA_DIR)
+        if rel.parts and rel.parts[0] == "_inbox":
+            continue
+        if p.is_dir():
+            return False
+        if p.suffix == ".mov":
+            return False
+    return True
+
+
 def _meeting_from_mov(mov: Path) -> Meeting:
     rel = mov.relative_to(DATA_DIR)
     subdir = str(rel.parent) if rel.parent != Path(".") else ""
