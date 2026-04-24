@@ -61,7 +61,7 @@ class Clip:
 
 def _meeting_from_mov(mov: Path) -> Meeting:
     rel = mov.relative_to(DATA_DIR)
-    subdir = rel.parts[0] if len(rel.parts) > 1 else ""
+    subdir = str(rel.parent) if rel.parent != Path(".") else ""
     stem = mov.stem
     base = Path(subdir) / stem
     return Meeting(
@@ -88,6 +88,13 @@ def find_meeting(subdir: str, stem: str) -> Meeting | None:
     if not mov.exists():
         return None
     return _meeting_from_mov(mov)
+
+
+def find_meeting_by_stem(stem: str) -> Meeting | None:
+    for m in list_meetings(include_inbox=True):
+        if m.stem == stem:
+            return m
+    return None
 
 
 def load_transcript(m: Meeting) -> str:
