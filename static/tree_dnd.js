@@ -1,8 +1,9 @@
 // Drag-and-drop + hover-action delegation for the /meetings nested tree.
 //
-// Drag: every row with [data-move-kind] is draggable. Every folder <summary>
-//   and the root <ul class="tree-root-drop"> are drop targets. On drop we
-//   POST to /folders/move or /meetings/{stem}/move and repaint the sidebar.
+// Drag: every row with [data-move-kind] is draggable. Every .folder-group
+//   element (summary + its expanded children) and the root
+//   <ul class="tree-root-drop"> are drop targets. On drop we POST to
+//   /folders/move or /meetings/{stem}/move and repaint the sidebar.
 //
 // Hover actions: the ➕ (create) and ✏️ (rename) buttons carry
 //   [data-action] + [data-folder-*] attrs; a single delegated click listener
@@ -50,11 +51,16 @@
     e.dataTransfer.effectAllowed = "move";
   }
 
+  function highlightNode(el) {
+    // The deepest enclosing folder-group wins over the root drop zone.
+    return el.closest(".folder-group") || el.closest(".tree-root-drop");
+  }
+
   function findDropTarget(el) {
     if (!el) return null;
-    const folderSummary = el.closest("summary.folder");
-    if (folderSummary) {
-      return { kind: "folder", path: folderSummary.parentElement.dataset.folderPath };
+    const folder = el.closest(".folder-group");
+    if (folder) {
+      return { kind: "folder", path: folder.dataset.folderPath };
     }
     const rootUl = el.closest(".tree-root-drop");
     if (rootUl) return { kind: "folder", path: "" };
@@ -66,21 +72,25 @@
     if (!tgt) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    const node = e.target.closest("summary.folder") || e.target.closest(".tree-root-drop");
+    const node = highlightNode(e.target);
     if (node) node.classList.add("drop-target");
   }
 
   function onDragLeave(e) {
-    const node = e.target.closest("summary.folder") || e.target.closest(".tree-root-drop");
-    if (node) node.classList.remove("drop-target");
+    // dragleave fires when crossing between descendants; only clear when
+    // actually leaving the highlighted node.
+    const node = highlightNode(e.target);
+    if (node && !node.contains(e.relatedTarget)) {
+      node.classList.remove("drop-target");
+    }
   }
 
   async function onDrop(e) {
     const tgt = findDropTarget(e.target);
     if (!tgt) return;
     e.preventDefault();
-    const node = e.target.closest("summary.folder") || e.target.closest(".tree-root-drop");
-    if (node) node.classList.remove("drop-target");
+    // Clear any lingering drop-target classes in the tree.
+    document.querySelectorAll(".drop-target").forEach(n => n.classList.remove("drop-target"));
     let payload;
     try {
       payload = JSON.parse(e.dataTransfer.getData("application/x-transcribe-move"));

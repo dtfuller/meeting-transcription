@@ -74,10 +74,12 @@ body { margin: 0; font-family: var(--font-sans); background: var(--bg); color: v
 }
 .folder-group > summary.folder::-webkit-details-marker { display: none; }
 .folder-group > summary.folder::before {
-  content: "▸"; display: inline-block; width: 0.85rem;
-  color: var(--muted); transition: transform 0.1s;
+  content: "▶"; flex: 0 0 auto; width: 0.9rem;
+  font-size: 0.72rem; line-height: 1; text-align: center;
+  color: var(--muted);
 }
-.folder-group[open] > summary.folder::before { transform: rotate(90deg); }
+.folder-group[open] > summary.folder::before { content: "▼"; }
+.folder-group > summary.folder:hover::before { color: var(--accent); }
 .tree ul { list-style: none; padding-left: 0.3rem; margin: 0; }
 .tree li a { text-decoration: none; color: var(--text); display: inline-flex; align-items: center; padding: 0.2rem 0.4rem; border-radius: 5px; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.76rem; letter-spacing: -0.01em; transition: background 120ms ease, color 120ms ease; }
 .tree li a:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); color: var(--text); }
