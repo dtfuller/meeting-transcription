@@ -17,7 +17,11 @@
     const html = await resp.text();
     if (!html.includes('class="tree"')) return;  // unexpected response shape
     const el = document.querySelector(".tree");
-    if (el) el.outerHTML = html;
+    if (!el) return;
+    el.outerHTML = html;
+    // fetch() swaps don't trigger htmx:afterSwap, so re-install listeners
+    // on the new <aside class="tree"> ourselves.
+    install();
   }
 
   async function promptCreate(parentPath) {
@@ -33,12 +37,15 @@
   }
 
   function onButtonClick(e) {
+    // Note: the `toggle-all` click is handled by base.html's global
+    // handler (it also flips the button text between "Expand all" /
+    // "Collapse all"). We only handle the folder-scoped actions here.
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
-    const path = btn.dataset.folderPath || "";
-    const name = btn.dataset.folderName || "";
-    if (btn.dataset.action === "create") promptCreate(path);
-    else if (btn.dataset.action === "rename") promptRename(path, name);
+    const action = btn.dataset.action;
+    if (action === "create") promptCreate(btn.dataset.folderPath || "");
+    else if (action === "rename") promptRename(btn.dataset.folderPath || "",
+                                               btn.dataset.folderName || "");
   }
 
   function onDragStart(e) {
@@ -49,21 +56,35 @@
       id: src.dataset.moveId,
     }));
     e.dataTransfer.effectAllowed = "move";
+    document.querySelector(".tree")?.classList.add("drag-active");
+  }
+
+  function onDragEnd() {
+    const tree = document.querySelector(".tree");
+    if (!tree) return;
+    tree.classList.remove("drag-active");
+    tree.querySelectorAll(".drop-target").forEach(n => n.classList.remove("drop-target"));
   }
 
   function highlightNode(el) {
-    // The deepest enclosing folder-group wins over the root drop zone.
-    return el.closest(".folder-group") || el.closest(".tree-root-drop");
+    // Deepest enclosing folder-group wins. Otherwise, any area inside .tree
+    // that is NOT a folder-group counts as the root drop zone; we paint the
+    // always-visible .tree-root-hint strip so the user has a clear target.
+    if (!el) return null;
+    const folder = el.closest(".folder-group");
+    if (folder) return folder;
+    if (el.closest(".tree")) {
+      return document.querySelector(".tree .tree-root-hint");
+    }
+    return null;
   }
 
   function findDropTarget(el) {
     if (!el) return null;
     const folder = el.closest(".folder-group");
-    if (folder) {
-      return { kind: "folder", path: folder.dataset.folderPath };
-    }
-    const rootUl = el.closest(".tree-root-drop");
-    if (rootUl) return { kind: "folder", path: "" };
+    if (folder) return { kind: "folder", path: folder.dataset.folderPath };
+    // Any area inside .tree that isn't a folder-group is a root drop.
+    if (el.closest(".tree")) return { kind: "folder", path: "" };
     return null;
   }
 
@@ -124,6 +145,7 @@
     if (!tree) return;
     tree.addEventListener("click", onButtonClick);
     tree.addEventListener("dragstart", onDragStart);
+    tree.addEventListener("dragend", onDragEnd);
     tree.addEventListener("dragover", onDragOver);
     tree.addEventListener("dragleave", onDragLeave);
     tree.addEventListener("drop", onDrop);

@@ -312,13 +312,35 @@ pre.log { background: #0c0a08; color: #d4c9a8; padding: 1rem 1.1rem; border-radi
 .speaker-inline-form button { background: var(--accent); color: white; border: none; border-radius: 6px; padding: 0.3rem 0.6rem; font-weight: 600; font-size: 0.8rem; cursor: pointer; justify-self: start; }
 
 /* Nested tree — folder CRUD + DnD */
-.tree-toolbar { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+.tree-toolbar {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border);
+}
+.tree-toolbar .new-folder-form { flex: 1; margin: 0; }
+.tree-toolbar .tree-toggle-all {
+  appearance: none; background: transparent; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.2rem 0.5rem; font-family: inherit; font-size: 0.82rem;
+  line-height: 1; cursor: pointer;
+}
+.tree-toolbar .tree-toggle-all:hover { color: var(--accent); border-color: var(--accent); }
 .new-folder-input {
   width: 100%; padding: 0.3rem 0.4rem;
   background: transparent; border: 1px dashed var(--border);
   border-radius: 6px; font: inherit; color: var(--muted); font-size: 0.78rem;
 }
 .new-folder-input:focus { outline: none; border-color: var(--accent); color: var(--text); }
+
+/* Root drop-hint strip — shown only while a drag is in progress. */
+.tree .tree-root-hint {
+  display: none; align-items: center; justify-content: center;
+  margin: 0.4rem 0.5rem 0; padding: 0.35rem 0.55rem;
+  border: 1px dashed var(--accent); border-radius: 6px;
+  color: var(--accent); font-size: 0.78rem; font-weight: 500;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  pointer-events: auto;
+}
+.tree.drag-active .tree-root-hint { display: flex; }
 
 .folder-group > summary.folder {
   display: flex; align-items: center; gap: 0.4rem;
@@ -341,8 +363,13 @@ pre.log { background: #0c0a08; color: #d4c9a8; padding: 1rem 1.1rem; border-radi
 .folder-actions button.fi:hover { color: var(--accent); }
 .folder-actions button.fi.fi-del:hover { color: var(--danger, #b02a37); }
 
-.tree-children { list-style: none; padding-left: 0.85rem; margin: 0; }
-.tree-root-drop { padding-left: 0; }
+.tree ul.tree-children {
+  list-style: none; margin: 0;
+  padding-left: 1.1rem;
+  margin-left: 0.55rem;
+  border-left: 1px solid var(--border);
+}
+.tree ul.tree-root-drop { padding-left: 0; margin-left: 0; border-left: 0; }
 .tree-leaf { display: flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.2rem; }
 
 /* Drop-target highlight (Task 12 wires this via JS) */
