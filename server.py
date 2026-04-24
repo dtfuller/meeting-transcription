@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import config_store, ingest, store, watcher
+from app import config_store, fs, ingest, store, watcher
 
 ROOT = Path(__file__).parent
 
@@ -23,6 +23,7 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 
     store.init_schema()
+    fs.assert_stem_uniqueness_or_warn()
 
     from app.routes import meetings, speakers, pipeline_routes, media, inbox, config_routes, search_routes, folders
     app.include_router(meetings.router)

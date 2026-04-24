@@ -262,6 +262,18 @@ def move_folder_tree(src_path: str, dst_path: str) -> list[str]:
         raise
 
 
+def assert_stem_uniqueness_or_warn() -> None:
+    """Emit a WARNING log line for every stem that appears more than once
+    across data/ (including _inbox). Never raises — duplicates are legal on
+    disk, they just break move/rename preflight checks."""
+    by_stem: dict[str, list[str]] = {}
+    for m in list_meetings(include_inbox=True):
+        by_stem.setdefault(m.stem, []).append(m.subdir or "(root)")
+    for stem, locations in by_stem.items():
+        if len(locations) > 1:
+            _log.warning("duplicate stem %r found at %s", stem, locations)
+
+
 def load_transcript(m: Meeting) -> str:
     return m.transcript_path.read_text(encoding="utf-8") if m.has_transcript else ""
 
