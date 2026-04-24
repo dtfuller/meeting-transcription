@@ -165,3 +165,45 @@ def test_move_meeting_artifacts_rolls_back_on_collision(nested_tree):
     # .mov should have been rolled back to its original location.
     assert (nested_tree / "data" / "Clients" / "Acme" / f"{stem}.mov").exists()
     assert not (nested_tree / "data" / "Blocked" / f"{stem}.mov").exists()
+
+
+def test_move_folder_tree_moves_three_parallel_trees(nested_tree):
+    stems = fs.move_folder_tree("Clients/Acme", "Renamed")
+    assert stems == ["2026-04-20 09-00-00"]
+    assert (nested_tree / "data" / "Renamed" / "2026-04-20 09-00-00.mov").exists()
+    assert (nested_tree / "transcripts" / "Renamed" / "2026-04-20 09-00-00.txt").exists()
+    assert (nested_tree / "information" / "Renamed" / "2026-04-20 09-00-00-knowledge.md").exists()
+    # Sources gone
+    assert not (nested_tree / "data" / "Clients" / "Acme").exists()
+
+
+def test_move_folder_tree_raises_on_destination_collision(nested_tree):
+    (nested_tree / "data" / "Blocked").mkdir(parents=True, exist_ok=True)
+    with pytest.raises(FileExistsError):
+        fs.move_folder_tree("Clients/Acme", "Blocked")
+    # Source still present.
+    assert (nested_tree / "data" / "Clients" / "Acme").exists()
+
+
+def test_move_folder_tree_rolls_back_partial_move(nested_tree, monkeypatch):
+    import shutil
+    real_move = shutil.move
+    calls = {"n": 0}
+
+    def flaky(src, dst):
+        calls["n"] += 1
+        if calls["n"] == 2:  # fail during the transcripts move
+            raise OSError("boom")
+        return real_move(src, dst)
+
+    monkeypatch.setattr(fs.shutil, "move", flaky)
+    with pytest.raises(OSError):
+        fs.move_folder_tree("Clients/Acme", "Renamed")
+    # data/ move succeeded once, then rollback put it back.
+    assert (nested_tree / "data" / "Clients" / "Acme").exists()
+    assert not (nested_tree / "data" / "Renamed").exists()
+
+
+def test_move_folder_tree_refuses_empty_source(nested_tree):
+    with pytest.raises(ValueError):
+        fs.move_folder_tree("", "Somewhere")

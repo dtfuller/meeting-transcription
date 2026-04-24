@@ -225,6 +225,43 @@ def move_meeting_artifacts(stem: str, src_subdir: str, dst_subdir: str) -> list[
         raise
 
 
+def move_folder_tree(src_path: str, dst_path: str) -> list[str]:
+    """Move an entire folder (with all descendants) across the three parallel
+    trees. Returns the list of meeting stems now under the new location so
+    callers can reindex. Raises FileExistsError on collisions; ValueError for
+    empty src; FileNotFoundError if the source doesn't exist on disk."""
+    if not src_path:
+        raise ValueError("Cannot move root")
+
+    roots = [DATA_DIR, TRANSCRIPTS_DIR, INFORMATION_DIR]
+    sources = [r / src_path for r in roots]
+    destinations = [r / dst_path for r in roots]
+
+    if not sources[0].is_dir():
+        raise FileNotFoundError(f"{sources[0]} is not a directory")
+    for dst in destinations:
+        if dst.exists():
+            raise FileExistsError(f"{dst} already exists")
+
+    moved: list[tuple[Path, Path]] = []
+    try:
+        for src, dst in zip(sources, destinations):
+            if not src.exists():
+                continue
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(src), str(dst))
+            moved.append((src, dst))
+        new_root = DATA_DIR / dst_path
+        return sorted(p.stem for p in new_root.rglob("*.mov"))
+    except Exception:
+        for src, dst in reversed(moved):
+            try:
+                shutil.move(str(dst), str(src))
+            except Exception:
+                _log.exception("rollback failed for %s -> %s", dst, src)
+        raise
+
+
 def load_transcript(m: Meeting) -> str:
     return m.transcript_path.read_text(encoding="utf-8") if m.has_transcript else ""
 
