@@ -1,0 +1,10 @@
+<aside class="tree" hx-target=".tree" hx-swap="outerHTML">
+  {% if tree_error %}
+  <div class="tree-banner" role="alert" data-dismiss-ms="6000">
+    <span>{{ tree_error }}</span>
+    <button type="button" class="toast-close" aria-label="Dismiss">×</button>
+  </div>
+  {% endif %}
+  {# Placeholder — Task 11 replaces this with the recursive render_node macro. #}
+  <div class="tree-placeholder">Tree rendering — see Task 11.</div>
+</aside>
