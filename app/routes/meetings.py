@@ -1,16 +1,21 @@
+import logging
 import sys
 from pathlib import Path
 from typing import Annotated
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import categorize
+from app import folders as folders_module
 from app import fs
 from app import markdown as md_render
 from app import pipeline
 from app import search
 from app import store
+from app.routes._tree import render_tree_partial, error as tree_error
+
+_log = logging.getLogger(__name__)
 
 
 def _split_row_tags(tags: list[store.Tag]) -> dict:
@@ -75,6 +80,14 @@ def meetings_index(request: Request, tag: str | None = None, tag_type: str | Non
             **nav_counts(),
         },
     )
+
+
+# NOTE: this route MUST be declared before `/meetings/{stem}` below, or
+# FastAPI will match the catch-all stem param ("tree-partial") first and
+# respond with 404. Keep it here when refactoring.
+@router.get("/meetings/tree-partial", response_class=HTMLResponse)
+def tree_partial(request: Request):
+    return render_tree_partial(request)
 
 
 @router.get("/meetings/{stem}")
@@ -187,3 +200,31 @@ def suggest_tags(stem: str):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"categorize failed: {e}")
     return {"tags": [{"name": t.name, "type": t.type} for t in proposal.tags]}
+
+
+@router.post("/meetings/{stem}/move", response_class=HTMLResponse)
+def meeting_move(request: Request, stem: str, new_subdir: str = Form("")):
+    try:
+        target = folders_module.validate_folder_path(new_subdir)
+    except ValueError as e:
+        return tree_error(request, str(e))
+    if target == "_inbox" or target.startswith("_inbox/"):
+        return tree_error(request, "'_inbox' is managed by the app.")
+    m = fs.find_meeting_by_stem(stem)
+    if m is None:
+        return tree_error(request, f"Meeting '{stem}' not found.")
+    if m.subdir == target:
+        return render_tree_partial(request)
+    # Collision: another meeting with the same stem already at the destination.
+    dst_mov = fs.DATA_DIR / target / f"{stem}.mov"
+    if dst_mov.exists():
+        return tree_error(request, f"A meeting named '{stem}' already exists at '{target}'.")
+    try:
+        fs.move_meeting_artifacts(stem, m.subdir, target)
+    except (FileExistsError, FileNotFoundError) as e:
+        return tree_error(request, str(e))
+    try:
+        search.reindex_meeting(stem)
+    except Exception:
+        _log.exception("reindex failed for %s", stem)
+    return render_tree_partial(request)

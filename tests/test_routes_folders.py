@@ -113,3 +113,27 @@ def test_move_folder_refuses_destination_collision(client, tmp_path):
                     data={"path": "Clients/Acme", "new_parent_path": "multiturbo"})
     assert r.status_code == 200
     assert "already exists" in r.text.lower()
+
+
+def test_meeting_move_changes_subdir_and_reindexes(client, tmp_path, monkeypatch):
+    reindexed = []
+    from app import search as _s
+    monkeypatch.setattr(_s, "reindex_meeting", lambda stem: reindexed.append(stem))
+    r = client.post("/meetings/2026-04-20 09-00-00/move",
+                    data={"new_subdir": "multiturbo"})
+    assert r.status_code == 200
+    assert (tmp_path / "data" / "multiturbo" / "2026-04-20 09-00-00.mov").exists()
+    assert "2026-04-20 09-00-00" in reindexed
+
+
+def test_meeting_move_refuses_inbox_destination(client):
+    r = client.post("/meetings/2026-04-20 09-00-00/move",
+                    data={"new_subdir": "_inbox"})
+    assert r.status_code == 200
+    assert "_inbox" in r.text
+
+
+def test_tree_partial_endpoint_returns_aside(client):
+    r = client.get("/meetings/tree-partial")
+    assert r.status_code == 200
+    assert "<aside" in r.text and 'class="tree"' in r.text
