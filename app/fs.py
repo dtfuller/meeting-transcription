@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
 import re
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
+
+_log = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parent.parent
 DATA_DIR = ROOT / "data"
@@ -176,6 +180,49 @@ def find_meeting_by_stem(stem: str) -> Meeting | None:
         if m.stem == stem:
             return m
     return None
+
+
+def move_meeting_artifacts(stem: str, src_subdir: str, dst_subdir: str) -> list[Path]:
+    """Move a meeting's four known files from <root>/<src>/<stem>{suffix} to
+    <root>/<dst>/<stem>{suffix}. The .mov is required; the other three are
+    optional (a meeting mid-pipeline may not have them yet). If any move
+    after the first raises, earlier moves are rolled back."""
+    suffixes = [
+        (DATA_DIR,        ".mov",            False),  # required
+        (TRANSCRIPTS_DIR, ".txt",            True),
+        (INFORMATION_DIR, "-knowledge.md",   True),
+        (INFORMATION_DIR, "-commitments.md", True),
+    ]
+    plan: list[tuple[Path, Path, bool]] = []
+    for root, suffix, optional in suffixes:
+        src = root / src_subdir / f"{stem}{suffix}"
+        dst = root / dst_subdir / f"{stem}{suffix}"
+        plan.append((src, dst, optional))
+
+    # Preflight: required source must exist; all destinations must be free.
+    first_src, _, _ = plan[0]
+    if not first_src.exists():
+        raise FileNotFoundError(f"{first_src} missing (required)")
+    for _, dst, _ in plan:
+        if dst.exists():
+            raise FileExistsError(f"{dst} already exists")
+
+    moved: list[tuple[Path, Path]] = []
+    try:
+        for src, dst, optional in plan:
+            if not src.exists() and optional:
+                continue
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(src), str(dst))
+            moved.append((src, dst))
+        return [dst for _, dst in moved]
+    except Exception:
+        for src, dst in reversed(moved):
+            try:
+                shutil.move(str(dst), str(src))
+            except Exception:
+                _log.exception("rollback failed for %s -> %s", dst, src)
+        raise
 
 
 def load_transcript(m: Meeting) -> str:

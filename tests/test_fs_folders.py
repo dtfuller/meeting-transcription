@@ -120,3 +120,48 @@ def test_build_tree_puts_root_meetings_on_root_node(tmp_path, monkeypatch):
     root = fs.build_tree()
     assert [m.stem for m in root.meetings] == ["rootcast"]
     assert root.subfolders == []
+
+
+def test_move_meeting_artifacts_moves_all_four_files(nested_tree):
+    stem = "2026-04-20 09-00-00"
+    fs.move_meeting_artifacts(stem, "Clients/Acme", "Moved")
+    assert (nested_tree / "data" / "Moved" / f"{stem}.mov").exists()
+    assert (nested_tree / "transcripts" / "Moved" / f"{stem}.txt").exists()
+    assert (nested_tree / "information" / "Moved" / f"{stem}-knowledge.md").exists()
+    assert (nested_tree / "information" / "Moved" / f"{stem}-commitments.md").exists()
+    # Sources gone
+    assert not (nested_tree / "data" / "Clients" / "Acme" / f"{stem}.mov").exists()
+
+
+def test_move_meeting_artifacts_skips_missing_optional_files(tmp_path, monkeypatch):
+    data = tmp_path / "data" / "A"
+    data.mkdir(parents=True)
+    (data / "alone.mov").write_bytes(b"\x00")
+    monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
+    monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
+    monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
+    fs.move_meeting_artifacts("alone", "A", "B")
+    assert (tmp_path / "data" / "B" / "alone.mov").exists()
+    # Optional files never existed; no crash.
+
+
+def test_move_meeting_artifacts_raises_when_mov_missing(tmp_path, monkeypatch):
+    (tmp_path / "data" / "A").mkdir(parents=True)
+    monkeypatch.setattr(fs, "DATA_DIR", tmp_path / "data")
+    monkeypatch.setattr(fs, "TRANSCRIPTS_DIR", tmp_path / "transcripts")
+    monkeypatch.setattr(fs, "INFORMATION_DIR", tmp_path / "information")
+    with pytest.raises(FileNotFoundError):
+        fs.move_meeting_artifacts("nope", "A", "B")
+
+
+def test_move_meeting_artifacts_rolls_back_on_collision(nested_tree):
+    stem = "2026-04-20 09-00-00"
+    # Pre-create a collision for the transcript — the data-level move will
+    # succeed but the transcript move will fail, forcing rollback.
+    (nested_tree / "transcripts" / "Blocked").mkdir(parents=True, exist_ok=True)
+    (nested_tree / "transcripts" / "Blocked" / f"{stem}.txt").write_text("x")
+    with pytest.raises(FileExistsError):
+        fs.move_meeting_artifacts(stem, "Clients/Acme", "Blocked")
+    # .mov should have been rolled back to its original location.
+    assert (nested_tree / "data" / "Clients" / "Acme" / f"{stem}.mov").exists()
+    assert not (nested_tree / "data" / "Blocked" / f"{stem}.mov").exists()
